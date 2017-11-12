@@ -27,6 +27,7 @@ int main(int argc, char **argv, char **envp)
 
     //Hello!
     //HELLO FROM FROM WILLIAM POWAH
+    // im gay 
 
 
     gpio = atoi(argv[1]);
