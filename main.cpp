@@ -22,6 +22,12 @@ int main(int argc, char **argv, char **envp)
     }
 
 
+
+
+
+    //Hello!
+
+
     gpio = atoi(argv[1]);
 
     // check if gpio is already exported
@@ -72,5 +78,3 @@ int main(int argc, char **argv, char **envp)
 
     return 0;
 }
-
-
