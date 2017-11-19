@@ -22,7 +22,7 @@ int main(int argc, char **argv, char **envp)
         printf("Reads the input value of the specified GPIO pin once a second for 20 seconds\n");
         exit(-1);
     }
-
+ cout << "suck dick" << endl;
 
     gpio = atoi(argv[1]);
 
