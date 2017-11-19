@@ -26,7 +26,7 @@ struct PolynomialComponent {
 
 //TODO: Erik needs to make a state machine that converts the input into an array of constants and exponents.
 //Here is the interface that you will implement:
-//This function converts a polynomial in string form to an array of PolynomialComponents.
+//This function converts a polynomial in string form to an array of PolynomialComponents. Its return type is PolynomialComponent*, which is an array of polynomial Components.
 struct PolynomialComponent *stringToPolynomialFunction(const char input[]) {
 
     //Loop through the string and determine its size. This will be used for the dynamic memory allocation later.
@@ -41,7 +41,7 @@ struct PolynomialComponent *stringToPolynomialFunction(const char input[]) {
     //free.
 
     //here is an example of how we're gonna do memory allocation. Make sure I did this right.
-    struct PolynomialComponent* polynomialFunction[sizeOfString];
+    struct PolynomialComponent *polynomialFunction = malloc(sizeOfString * sizeof(int));
 
     //... convert string to polynomialComponent array ...
 
@@ -71,25 +71,18 @@ int main(int argc, char **argv, char **envp) {
         }
     }
 
-//     set to input direction
-//    printf("> setting to input\n");
-//    if ((gpioDirection = gpio_direction_input(gpio)) < 0) {
-//        perror("gpio_direction_input");
-//    }
-
     // set to output direction:
-    printf("> setting to input\n");
-    if ((gpioDirection = gpio_direction_output(gpio)) < 0) {
+    printf("> setting to output\n");
+    if ((gpioDirection = gpio_direction_output(gpio, 0)) < 0) {
         perror("gpio_direction_output");
     }
 
     // Set the gpio from positive to negative 20 times
     printf("> begin setting the GPIO%d\n", gpio);
-    for (i = 0; i < 100; i++) {
+    for (i = 0; i < 10000; i++) {
         // set the gpio
+        printf("  > Write to GPIO: value");
         gpio_set_value(gpio, 1);
-//        value = gpio_get_value(gpio);
-//        printf("  > Read GPIO%d: value '%d'\n", gpio, value);
 
 
         // pause between each read
