@@ -14,6 +14,8 @@ int main(int argc, char **argv, char **envp)
     int gpio;
     int value;
 
+    
+
 
     if (argc < 2) {
         printf("Usage: gpioRead <gpio>\n\n");
