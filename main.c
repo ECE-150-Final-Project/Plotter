@@ -7,14 +7,11 @@
 #include <ugpio/ugpio.h>
 
 
-int main(int argc, char **argv, char **envp)
-{
+int main(int argc, char **argv, char **envp) {
     int i;
     int rq, rv;
     int gpio;
     int value;
-
-    
 
 
     if (argc < 2) {
@@ -26,16 +23,14 @@ int main(int argc, char **argv, char **envp)
     gpio = atoi(argv[1]);
 
     // check if gpio is already exported
-    if ((rq = gpio_is_requested(gpio)) < 0)
-    {
+    if ((rq = gpio_is_requested(gpio)) < 0) {
         perror("gpio_is_requested");
         return EXIT_FAILURE;
     }
     // export the gpio
     if (!rq) {
         printf("> exporting gpio\n");
-        if ((rv = gpio_request(gpio, NULL)) < 0)
-        {
+        if ((rv = gpio_request(gpio, NULL)) < 0) {
             perror("gpio_request");
             return EXIT_FAILURE;
         }
@@ -43,15 +38,13 @@ int main(int argc, char **argv, char **envp)
 
     // set to input direction
     printf("> setting to input\n");
-    if ((rv = gpio_direction_input(gpio)) < 0)
-    {
+    if ((rv = gpio_direction_input(gpio)) < 0) {
         perror("gpio_direction_input");
     }
 
     // read the gpio 20 times
-    printf("> begin reading GPIO%d\n",gpio);
-    for (i = 0; i < 20; i++)
-    {
+    printf("> begin reading GPIO%d\n", gpio);
+    for (i = 0; i < 100; i++) {
         // read the gpio
         value = gpio_get_value(gpio);
         printf("  > Read GPIO%d: value '%d'\n", gpio, value);
@@ -65,8 +58,7 @@ int main(int argc, char **argv, char **envp)
     // unexport the gpio
     if (!rq) {
         printf("> unexporting gpio\n");
-        if (gpio_free(gpio) < 0)
-        {
+        if (gpio_free(gpio) < 0) {
             perror("gpio_free");
         }
     }
