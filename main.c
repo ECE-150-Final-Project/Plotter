@@ -12,6 +12,7 @@
 
 struct PolynomialComponent;
 
+struct PolynomialComponent *stringToPolynomialFunction(const char input[]);
 
 /////////////////////////////////////////////////////
 // Function Definitions:
@@ -40,8 +41,9 @@ struct PolynomialComponent *stringToPolynomialFunction(const char input[]) {
     //malloc, and
     //free.
 
-    //here is an example of how we're gonna do memory allocation. Make sure I did this right.
-    struct PolynomialComponent *polynomialFunction = malloc(sizeOfString * sizeof(int));
+    //here is an example of how we're gonna do memory allocation. Make sure I did this right!!!
+    //Note that this over-allocated memory, because it allocates memory for characters like 'x', '^', and '+', etc, that are in the string.
+    struct PolynomialComponent *polynomialFunction = malloc(sizeOfString * sizeof(struct PolynomialComponent));
 
     //... convert string to polynomialComponent array ...
 
