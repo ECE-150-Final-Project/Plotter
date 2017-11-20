@@ -71,6 +71,12 @@ int main(int argc, char **argv, char **envp) {
         }
     }
 
+//     set to input direction
+//    printf("> setting to input\n");
+//    if ((gpioDirection = gpio_direction_input(gpio)) < 0) {
+//        perror("gpio_direction_input");
+//    }
+
     // set to output direction:
     printf("> setting to output\n");
     if ((gpioDirection = gpio_direction_output(gpio, 0)) < 0) {
@@ -81,11 +87,14 @@ int main(int argc, char **argv, char **envp) {
     printf("> begin setting the GPIO%d\n", gpio);
     for (i = 0; i < 10000; i++) {
         // set the gpio
-        printf("  > Write to GPIO: value");
         gpio_set_value(gpio, 1);
+//        value = gpio_get_value(gpio);
+        printf("  > Write to GPIO: value\n");
 
 
         // pause between each read
+        sleep(1);
+        gpio_set_value(gpio, 0);
         sleep(1);
     }
 
