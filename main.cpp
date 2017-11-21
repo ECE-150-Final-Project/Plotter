@@ -53,7 +53,7 @@ const int X_AXIS_DIRECTION_GPIO = 0;
 const int X_AXIS_STEP_GPIO = 1;
 const int Y_AXIS_DIRECTION_GPIO = 2;
 const int Y_AXIS_STEP_GPIO = 3;
-const int STEP_TIME = 10; //time it takes to step a stepper motor in milliseconds.
+const int STEP_TIME = 10000; //time it takes to step a stepper motor in microseconds.
 
 /////////////////////////////////////////////////////
 // Function Definitions:
