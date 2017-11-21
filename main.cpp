@@ -3,16 +3,27 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 #include <ugpio/ugpio.h>
 
-////////////////////////////////////////////////////
+/////////////////////////////////////////////////////
 // Function Declarations:
-
 
 struct PolynomialComponent;
 
-struct PolynomialComponent *stringToPolynomialFunction(const char input[]);
+PolynomialComponent *stringToPolynomialFunction(const char input[]);
+
+void stepMotor(int gpioDir, int gpioStp, bool clockwise);
+
+
+/////////////////////////////////////////////////////
+// Global Variables:
+
+const int X_AXIS_DIRECTION = 0;
+const int X_AXIS_STEP = 1;
+const int Y_AXIS_DIRECTION = 2;
+const int Y_AXIS_STEP = 3;
 
 /////////////////////////////////////////////////////
 // Function Definitions:
@@ -28,7 +39,7 @@ struct PolynomialComponent {
 //TODO: Erik needs to make a state machine that converts the input into an array of constants and exponents.
 //Here is the interface that you will implement:
 //This function converts a polynomial in string form to an array of PolynomialComponents. Its return type is PolynomialComponent*, which is an array of polynomial Components.
-struct PolynomialComponent *stringToPolynomialFunction(const char input[]) {
+PolynomialComponent *stringToPolynomialFunction(const char input[]) {
 
     //Loop through the string and determine its size. This will be used for the dynamic memory allocation later.
     int sizeOfString = 0;
@@ -43,13 +54,23 @@ struct PolynomialComponent *stringToPolynomialFunction(const char input[]) {
 
     //here is an example of how we're gonna do memory allocation. Make sure I did this right!!!
     //Note that this over-allocated memory, because it allocates memory for characters like 'x', '^', and '+', etc, that are in the string.
-    struct PolynomialComponent *polynomialFunction = malloc(sizeOfString * sizeof(struct PolynomialComponent));
+//    struct PolynomialComponent *polynomialFunction = malloc(sizeOfString * sizeof(struct PolynomialComponent));
+    PolynomialComponent *polynomialFunction = new PolynomialComponent[sizeOfString];
 
     //... convert string to polynomialComponent array ...
 
     return polynomialFunction;
 }
 
+/**
+ * Steps the motor a single 1.8 degree step
+ * @param clockwise A boolean value that determines if you want the motor to go clockwise or not.
+ * @param gpioDir The gpio pin your motor direction is attached to.
+ * @param gpioStp The gpio pin your motor stp is attached to.
+ */
+void stepMotor(int gpioDir, int gpioStp, bool clockwise) {
+
+}
 
 int main(int argc, char **argv, char **envp) {
     int i;
