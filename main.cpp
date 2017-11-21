@@ -4,26 +4,56 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <stdexcept>
 
 #include <ugpio/ugpio.h>
 
 /////////////////////////////////////////////////////
-// Function Declarations:
+// Type Declarations:
 
 struct PolynomialComponent;
 
+//For the step motor function. This just makes it so that in the step motor
+//function, you can specify if you want to x axis to move, or the y axis to move.
+//easy!
+enum AXIS {
+    X, Y
+};
+//Also for the step motor function
+enum Direction {
+    CW, CCW
+};
+
+/////////////////////////////////////////////////////
+// Function Declarations:
+
+
 PolynomialComponent *stringToPolynomialFunction(const char input[]);
 
-void stepMotor(int gpioDir, int gpioStp, bool clockwise);
+/**
+ * Steps the motor a single 1.8 degree step
+ * @param direction A boolean value that determines if you want the motor to go clockwise or not.
+ * @param axis The gpio pin your motor direction is attached to.
+ * @param gpioStp The gpio pin your motor stp is attached to.
+ */
+void stepMotor(AXIS axis, Direction direction);
+
+void requestGPIOAndSetDirectionOutput(int gpio);
+
+void freeGPIO(int gpio);
+
+//enum AXIS;
+//enum Direction;
 
 
 /////////////////////////////////////////////////////
 // Global Variables:
 
-const int X_AXIS_DIRECTION = 0;
-const int X_AXIS_STEP = 1;
-const int Y_AXIS_DIRECTION = 2;
-const int Y_AXIS_STEP = 3;
+const int X_AXIS_DIRECTION_GPIO = 0;
+const int X_AXIS_STEP_GPIO = 1;
+const int Y_AXIS_DIRECTION_GPIO = 2;
+const int Y_AXIS_STEP_GPIO = 3;
+const int STEP_TIME = 10; //time it takes to step a stepper motor in milliseconds.
 
 /////////////////////////////////////////////////////
 // Function Definitions:
@@ -62,35 +92,62 @@ PolynomialComponent *stringToPolynomialFunction(const char input[]) {
     return polynomialFunction;
 }
 
-/**
- * Steps the motor a single 1.8 degree step
- * @param clockwise A boolean value that determines if you want the motor to go clockwise or not.
- * @param gpioDir The gpio pin your motor direction is attached to.
- * @param gpioStp The gpio pin your motor stp is attached to.
- */
-void stepMotor(int gpioDir, int gpioStp, bool clockwise) {
+void stepMotor(AXIS axis, Direction direction) {
 
-}
-
-int main(int argc, char **argv, char **envp) {
-    int i;
-    //
-    int gpioRequest;
-    int gpioDirection;
-    int gpio = 0;
-
-    // check if gpio is already exported
-    if ((gpioRequest = gpio_is_requested(gpio)) < 0) {
-        perror("gpio_is_requested");
-        return EXIT_FAILURE;
+    //Local step and direction GPIOs so that they can be set based on inputs.
+    int stepGPIO;
+    int dirGPIO;
+    switch (axis) {
+        case X:
+            stepGPIO = X_AXIS_STEP_GPIO;
+            dirGPIO = X_AXIS_DIRECTION_GPIO;
+            break;
+        case Y:
+            stepGPIO = Y_AXIS_STEP_GPIO;
+            dirGPIO = Y_AXIS_DIRECTION_GPIO;
+            break;
     }
 
-    // export the gpio
+    switch (direction) {
+        case CW:
+            //set directionGPIO to GND, because GND is CW.
+            gpio_set_value(dirGPIO, 0);
+            break;
+        case CCW:
+            //set directionGPIO to HIGH, because HIGH is CCW.
+            gpio_set_value(dirGPIO, 1);
+            break;
+    }
+
+    //sleep for a few more milliseconds, because this function will probably
+    //be called consecutively all the time with no breaks.
+    //We also need to allow time for the direction pin to charge up.
+    usleep(STEP_TIME);
+
+    //pulse step on:
+    gpio_set_value(stepGPIO, 1);
+    //sleep for a few milliseconds, because you need to let the coils charge etc.
+    usleep(STEP_TIME);
+    //pull step to GND, because its GND activated:
+    gpio_set_value(stepGPIO, 0);
+}
+
+void requestGPIOAndSetDirectionOutput(int gpio) {
+    int gpioRequest;
+    int gpioDirection;
+
+    // check if gpio is already requested
+    if ((gpioRequest = gpio_is_requested(gpio)) < 0) {
+        perror("gpio_is_requested");
+        throw std::exception();
+    }
+
+    // request the gpio
     if (!gpioRequest) {
         printf("> exporting gpio\n");
         if ((gpioDirection = gpio_request(gpio, NULL)) < 0) {
             perror("gpio_request");
-            return EXIT_FAILURE;
+            throw std::exception();
         }
     }
 
@@ -105,30 +162,44 @@ int main(int argc, char **argv, char **envp) {
     if ((gpioDirection = gpio_direction_output(gpio, 0)) < 0) {
         perror("gpio_direction_output");
     }
+}
+
+void freeGPIO(int gpio) {
+    if (gpio_free(gpio) < 0) {
+        perror("freeGPIO had an error.\n");
+    }
+}
+
+int main(int argc, char **argv, char **envp) {
+    int i;
+    //
+    requestGPIOAndSetDirectionOutput(X_AXIS_DIRECTION_GPIO);
+    requestGPIOAndSetDirectionOutput(X_AXIS_STEP_GPIO);
+    requestGPIOAndSetDirectionOutput(Y_AXIS_DIRECTION_GPIO);
+    requestGPIOAndSetDirectionOutput(Y_AXIS_STEP_GPIO);
 
     // Set the gpio from positive to negative 20 times
-    printf("> begin setting the GPIO%d\n", gpio);
+    printf("> begin stepping the motor!\n");
     for (i = 0; i < 10000; i++) {
-        // set the gpio
-        gpio_set_value(gpio, 1);
-//        value = gpio_get_value(gpio);
-        printf("  > Write to GPIO: value\n");
+//        // set the gpio
+//        gpio_set_value(gpio, 1);
+////        value = gpio_get_value(gpio);
+//        printf("  > Write to GPIO: value\n");
+//
+//
+//        // pause between each read
+//        usleep(10);
+//        gpio_set_value(gpio, 0);
+//        usleep(10);
 
-
-        // pause between each read
-        sleep(1);
-        gpio_set_value(gpio, 0);
-        sleep(1);
+        stepMotor(X, CW);
     }
 
+    freeGPIO(X_AXIS_DIRECTION_GPIO);
+    freeGPIO(X_AXIS_STEP_GPIO);
+    freeGPIO(Y_AXIS_DIRECTION_GPIO);
+    freeGPIO(Y_AXIS_STEP_GPIO);
 
-    // unexport the gpio
-    if (!gpioRequest) {
-        printf("> unexporting gpio\n");
-        if (gpio_free(gpio) < 0) {
-            perror("gpio_free");
-        }
-    }
 
     return 0;
 }
