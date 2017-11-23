@@ -274,25 +274,28 @@ int main(const int argc, const char *const argv[]) {
     requestGPIOAndSetDirectionOutput(Y_AXIS_DIRECTION_GPIO);
     requestGPIOAndSetDirectionOutput(Y_AXIS_STEP_GPIO);
 
-    requestGPIOAndSetDirectionOutput(X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
-    requestGPIOAndSetDirectionOutput(X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
-    requestGPIOAndSetDirectionOutput(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
-    requestGPIOAndSetDirectionOutput(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO);
+    requestGPIOAndSetDirectionInput(X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
+    requestGPIOAndSetDirectionInput(X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO);
+    requestGPIOAndSetDirectionInput(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
+    requestGPIOAndSetDirectionInput(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO);
 
     // Set the gpio from positive to negative 20 times
     printf("> begin stepping the motor!\n");
     for (i = 0; i < 10000; i++) {
-        readGPIO(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
-//        stepMotor(Y, CW);
+//        readGPIO(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
+//        usleep(100 * 1000); // 100 milliseconds.
+        stepMotor(Y, CW);
     }
 
+    std::cout << "Free GPIOs that are Outputs: " << std::endl;
     freeGPIO(X_AXIS_DIRECTION_GPIO);
     freeGPIO(X_AXIS_STEP_GPIO);
     freeGPIO(Y_AXIS_DIRECTION_GPIO);
     freeGPIO(Y_AXIS_STEP_GPIO);
 
+    std::cout << "Free GPIOs that are Inputs: " << std::endl;
     freeGPIO(X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
-    freeGPIO(X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
+    freeGPIO(X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO);
     freeGPIO(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
     freeGPIO(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO);
 
