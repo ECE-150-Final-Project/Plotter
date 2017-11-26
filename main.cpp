@@ -44,6 +44,8 @@ void freeGPIO(int gpio);
 
 bool readGPIO(int gpio);
 
+bool gotoXYpoint(int x, int y) ;
+
 /////////////////////////////////////////////////////
 // Global Variables:
 
@@ -57,6 +59,9 @@ const int Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 8;
 const int Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 9;
 
 const int STEP_TIME = 10000; //time it takes to step a stepper motor in microseconds.
+
+int currentX = 0 ; // Assuming the plotter starts at x-origin
+int currentY = 0 ; // Assuming the plotter starts at y-origin
 
 /////////////////////////////////////////////////////
 // Function Definitions:
@@ -247,6 +252,64 @@ void freeGPIO(int gpio) {
     if (gpio_free(gpio) < 0) {
         perror("freeGPIO had an error.\n");
     }
+}
+
+bool gotoXYpoint (const int X, const int Y){
+	int oldX = currentX ; // OldX is the original y-coordinate of the motor
+	int oldY = currentY ; // OldY is the original y-coordinate of the motor
+	int precision = 1 ; // This is the maximum amount of precision I think we should allow
+	float masterslope = (Y - oldY)/(X - oldX) ; // This slope is the slope that we're always checking with.  Eqn of slope is (y2-y1)/(x2-x1
+	float currentslope = (Y - currentY)/(X - currentX) ; // This is the slope that is recalculated with every new step.
+	Direction directionX ; // Variable helps specify the direction that the motor will always be going, there could be a better way, but for now I have specified an individual direction for both the x and y
+	Direction directionY ;
+	AXIS axis ;
+	int changeofX ;
+	int changeofY ;
+	
+	if (X > currentX) { // This determines the original X-direction of the motor.
+		directionX = CW ;
+		changeofX = 0 ;
+	}
+	else if (X < currentX) {
+		directionX = CCW ;
+		changeofX = 1 ;
+	}
+	/*else if (X == currentX) { // This basically means that we identified the line to be horizontal.  I have no idea what to do with this yet, leave it here for now.
+		
+	}*/
+	
+	if (Y > currentY) { // This determines the original Y-direction of the motor.
+		directionY = CW ;
+		changeofY = 0 ;
+	}
+	else if (X < currentX) {
+		directionY = CCW ;
+		changeofY = 1 ;
+	}
+	/*else if (Y == currentY) { // This basically means that we identified the line to be vertical.  I have no idea what to do with this yet, leave it here for now.
+		
+	}*/
+	
+	while ( X != currentX || Y != currentY ) {
+		
+		while (currentslope > (masterslope - precision) ) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the X increases
+			axis = X ;
+			stepMotor(axis,directionX) ; // This should make one x - step towards the desired point.
+			currentX = currentX + ( -2*changeofX + 1) ; // The new currentX location. The "-2*directionX + 1" is the way I can determine whether it increases or decreases. lol its jokes
+			currentslope = (Y - currentY)/(X - currentX) ;
+		}
+		
+		while (currentslope < (masterslope + precision) ) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the Y increases
+			axis = Y ;
+			stepMotor(axis,directionY) ; // This should make one Y-step towards the desired point.
+			currentY = currentY + ( -2*changeofY + 1) ; // The new currentY location. The "-2*directionY + 1" is the way I can determine whether it increases or decreases. lol its jokes
+			currentslope = (Y - currentY)/(X - currentX) ;
+		}
+		
+	}
+	
+	
+	return true ;
 }
 
 bool readGPIO(int gpio) {
