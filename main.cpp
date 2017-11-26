@@ -264,10 +264,9 @@ void freeGPIO(int gpio) {
 bool gotoXYpoint(const int x, const int y) {
     int oldX = currentX; // OldX is the original y-coordinate of the motor
     int oldY = currentY; // OldY is the original y-coordinate of the motor
-    int precision = 1; // This is the maximum amount of precision I think we should allow
-    float masterslope = (y - oldY) / (x -
-                                      oldX); // This slope is the slope that we're always checking with.  Eqn of slope is (y2-y1)/(x2-x1
-    float currentslope = (y - currentY) / (x - currentX); // This is the slope that is recalculated with every new step.
+    float precision = 0.1; // This is the maximum amount of precision I think we should allow
+    float masterslope = ((float)y - (float)oldY) / ((float)x - (float)oldX); // This slope is the slope that we're always checking with.  Eqn of slope is (y2-y1)/(x2-x1
+    float currentslope = ((float)y - (float)currentY) / ((float)x - (float)currentX); // This is the slope that is recalculated with every new step.
     Direction directionX; // Variable helps specify the direction that the motor will always be going, there could be a better way, but for now I have specified an individual direction for both the x and y
     Direction directionY;
     AXIS axis;
@@ -280,42 +279,60 @@ bool gotoXYpoint(const int x, const int y) {
     } else if (x < currentX) {
         directionX = CCW;
         changeofX = 1;
-    } else {
-
     }
-    /*else if (X == currentX) { // This basically means that we identified the line to be horizontal.  I have no idea what to do with this yet, leave it here for now.
-
-    }*/
 
     if (y > currentY) { // This determines the original Y-direction of the motor.
         directionY = CW;
         changeofY = 0;
-    } else if (x < currentX) {
+    } else if (y < currentY) {
         directionY = CCW;
         changeofY = 1;
     }
-    /*else if (Y == currentY) { // This basically means that we identified the line to be vertical.  I have no idea what to do with this yet, leave it here for now.
 
-    }*/
+    if (currentX == x && currentY == y) { // For the scenario of the (x,y) being a single point
+        std::cout << "suck my dick" << std::endl ;
+        return true;
+    }
+
+    if (currentX == x) { // For the scenario of the (x,y) resulting in a vertical line
+        while (currentY != y) {
+            axis = Y;
+            stepMotor(axis, directionY);
+            currentY = currentY + (-2 * changeofY + 1);
+            std::cout << "suck" << std::endl ;
+        }
+        return true;
+    }
+
+    if (currentY == y) { // For the scenario of the (x,y) resulting in a horizontal line
+        while (currentX != x) {
+            axis = X;
+            stepMotor(axis, directionX);
+            currentX = currentX + (-2 * changeofX + 1);
+            std::cout << "dick" << std::endl ;
+        }
+        return true;
+    }
+
 
     while (x != currentX || y != currentY) {
 
-        while (currentslope > (masterslope -
-                               precision)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the X increases
+        while (currentslope > (masterslope - precision)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the X increases
             axis = X;
-            stepMotor(axis, directionX); // This should make one x - step towards the desired point.
-            currentX = currentX + (-2 * changeofX +
-                                   1); // The new currentX location. The "-2*directionX + 1" is the way I can determine whether it increases or decreases. lol its jokes
-            currentslope = (y - currentY) / (x - currentX);
-        }
+            stepMotor(axis, directionX); // This should make one xs - step towards the desired point.
+            currentX = currentX + (-2 * changeofX + 1); // The new currentX location. The "-2*directionX + 1" is the way I can determine whether it increases or decreases. lol its jokes
+            currentslope = ((float)y - (float)currentY) / ((float)x - (float)currentX);
+            std::cout << "Y: " << y <<" "<< currentY << std::endl;
+            std::cout << "X: " << x <<" "<< currentX << std::endl;
+            std::cout << "slope: " << currentslope <<" "<< masterslope << std::endl;
+            std::cout << "suck this:" << currentslope << ">" << masterslope-precision << std::endl;
 
-        while (currentslope < (masterslope +
-                               precision)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the Y increases
+        }
+        while (currentslope < (masterslope + precision)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the Y increases
             axis = Y;
             stepMotor(axis, directionY); // This should make one Y-step towards the desired point.
-            currentY = currentY + (-2 * changeofY +
-                                   1); // The new currentY location. The "-2*directionY + 1" is the way I can determine whether it increases or decreases. lol its jokes
-            currentslope = (y - currentY) / (x - currentX);
+            currentY = currentY + (-2 * changeofY + 1); // The new currentY location. The "-2*directionY + 1" is the way I can determine whether it increases or decreases. lol its jokes
+            currentslope = ((float)y - (float)currentY) / ((float)x - (float)currentX);
         }
 
     }
@@ -360,32 +377,40 @@ int main(const int argc, const char *const argv[]) {
 
     int numSteps = 0;
 
-    if (!(strcmp(argv[1], "CCW"))) {
-        direction = CCW;
-    } else if (!(strcmp(argv[1], "CW"))) {
-        direction = CW;
-    } else {
-        direction = CCW;
-    }
+//    if (!(strcmp(argv[1], "CCW"))) {
+//        direction = CCW;
+//    } else if (!(strcmp(argv[1], "CW"))) {
+//        direction = CW;
+//    } else {
+//        direction = CCW;
+//    }
+//
+//    if (!(strcmp(argv[2], "X"))) {
+//        axis = X;
+//    } else if (!(strcmp(argv[2], "Y"))) {
+//        axis = Y;
+//    } else {
+//        axis = X;
+//    }
 
-    if (!(strcmp(argv[2], "X"))) {
-        axis = X;
-    } else if (!(strcmp(argv[2], "Y"))) {
-        axis = Y;
-    } else {
-        axis = X;
-    }
+//    // Set the gpio from positive to negative 20 times
+//    printf("> begin stepping the motor!\n");
+//    for (i = 0; i < 10000; i++) {
+//        if (stepMotor(axis, direction)) {
+//            numSteps++;
+//        } else {
+//            std::cout << "numSteps: " << numSteps << std::endl;
+//        }
+//
+//    }
 
-    // Set the gpio from positive to negative 20 times
-    printf("> begin stepping the motor!\n");
-    for (i = 0; i < 10000; i++) {
-        if (stepMotor(axis, direction)) {
-            numSteps++;
-        } else {
-            std::cout << "numSteps: " << numSteps << std::endl;
-        }
+    int x = atoi(argv[1]);
+    int y = atoi(argv[2]);
 
-    }
+    //////////////////////////////////////////////////////
+    //Goto testing:
+    gotoXYpoint(x, y);
+
 
     std::cout << "Free GPIOs that are Outputs: " << std::endl;
     freeGPIO(X_AXIS_DIRECTION_GPIO);
