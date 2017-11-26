@@ -51,10 +51,12 @@ const int X_AXIS_DIRECTION_GPIO = 0;
 const int X_AXIS_STEP_GPIO = 1;
 const int Y_AXIS_DIRECTION_GPIO = 2;
 const int Y_AXIS_STEP_GPIO = 3;
+
 const int X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 6;
-const int X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 7;
-const int Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 8;
-const int Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 9;
+const int X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 19;
+const int Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 18;
+const int Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 11;
+
 
 const int STEP_TIME = 10000; //time it takes to step a stepper motor in microseconds.
 
@@ -118,21 +120,23 @@ bool stepMotor(AXIS axis, Direction direction) {
             //Gotta determine if it's the X or the Y axis first though.
             //IF Y and if CW, then use Limit Y MAX.
             if (stepGPIO == Y_AXIS_STEP_GPIO && readGPIO(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO)) {
-                std::cout << "Failed to step motor, Read Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO Limit switch true." << std::endl;
-                if(readGPIO(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO) == -1) {
+                std::cout << "Failed to step motor, Read Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO Limit switch true."
+                          << std::endl;
+                if (readGPIO(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO) == -1) {
                     perror("Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO NOT DEFINED");
                     throw std::exception();
                 }
-                return -1;
+                return false;
             }
             //IF X and CW, then use Limit X MAX.
             if (stepGPIO == X_AXIS_STEP_GPIO && readGPIO(X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO)) {
-                std::cout << "Failed to step motor, X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO Read Limit switch true." << std::endl;
-                if(readGPIO(X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO) == -1) {
+                std::cout << "Failed to step motor, X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO Read Limit switch true."
+                          << std::endl;
+                if (readGPIO(X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO) == -1) {
                     perror("X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO NOT DEFINED");
                     throw std::exception();
                 }
-                return -1;
+                return false;
             }
 
             //set directionGPIO to HIGH, because GND is CW.
@@ -144,21 +148,23 @@ bool stepMotor(AXIS axis, Direction direction) {
             //Gotta determine if it's the X or the Y axis first though.
             //IF Y and if CCW, then use Limit Y MIN.
             if (stepGPIO == Y_AXIS_STEP_GPIO && readGPIO(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO)) {
-                std::cout << "Failed to step motor, Read Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO Limit switch true." << std::endl;
-                if(readGPIO(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO) == -1) {
+                std::cout << "Failed to step motor, Read Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO Limit switch true."
+                          << std::endl;
+                if (readGPIO(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO) == -1) {
                     perror("Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO NOT DEFINED");
                     throw std::exception();
                 }
-                return -1;
+                return false;
             }
             //IF X and CCW, then use Limit X MIN.
             if (stepGPIO == X_AXIS_STEP_GPIO && readGPIO(X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO)) {
-                std::cout << "Failed to step motor, Read X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO Limit switch true." << std::endl;
-                if(readGPIO(X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO) == -1) {
+                std::cout << "Failed to step motor, Read X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO Limit switch true."
+                          << std::endl;
+                if (readGPIO(X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO) == -1) {
                     perror("X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO NOT DEFINED");
                     throw std::exception();
                 }
-                return -1;
+                return false;
             }
 
             //set directionGPIO to GND, because HIGH is CCW.
@@ -277,12 +283,34 @@ int main(const int argc, const char *const argv[]) {
     requestGPIOAndSetDirectionInput(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
     requestGPIOAndSetDirectionInput(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO);
 
+
+
+    //Accept inputs for testing purposes:
+    Direction direction;
+    AXIS axis;
+
+//    int numSteps:
+
+    if (!(strcmp(argv[1], "CCW"))) {
+        direction = CCW;
+    } else if (!(strcmp(argv[1], "CW"))) {
+        direction = CW;
+    } else {
+        direction = CCW;
+    }
+
+    if (!(strcmp(argv[2], "X"))) {
+        axis = X;
+    } else if (!(strcmp(argv[2], "Y"))) {
+        axis = Y;
+    } else {
+        axis = X;
+    }
+
     // Set the gpio from positive to negative 20 times
     printf("> begin stepping the motor!\n");
     for (i = 0; i < 10000; i++) {
-//        readGPIO(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
-//        usleep(100 * 1000); // 100 milliseconds.
-        stepMotor(Y, CW);
+        stepMotor(axis, direction);
     }
 
     std::cout << "Free GPIOs that are Outputs: " << std::endl;
