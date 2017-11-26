@@ -183,6 +183,7 @@ bool stepMotor(AXIS axis, Direction direction) {
     usleep(STEP_TIME);
     //pull step to GND, because its GND activated:
     gpio_set_value(stepGPIO, 0);
+    return true;
 }
 
 void requestGPIOAndSetDirectionOutput(int gpio) {
@@ -289,7 +290,7 @@ int main(const int argc, const char *const argv[]) {
     Direction direction;
     AXIS axis;
 
-//    int numSteps:
+    int numSteps = 0;
 
     if (!(strcmp(argv[1], "CCW"))) {
         direction = CCW;
@@ -310,7 +311,12 @@ int main(const int argc, const char *const argv[]) {
     // Set the gpio from positive to negative 20 times
     printf("> begin stepping the motor!\n");
     for (i = 0; i < 10000; i++) {
-        stepMotor(axis, direction);
+        if (stepMotor(axis, direction)) {
+            numSteps++;
+        } else {
+            std::cout << "numSteps: " << numSteps << std::endl;
+        }
+
     }
 
     std::cout << "Free GPIOs that are Outputs: " << std::endl;
