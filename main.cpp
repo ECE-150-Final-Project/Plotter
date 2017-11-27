@@ -60,7 +60,7 @@ const int Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 18;
 const int Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 11;
 
 
-const int STEP_TIME = 10000; //time it takes to step a stepper motor in microseconds.
+const int STEP_TIME = 10* 1000; //time it takes to step a stepper motor in microseconds.
 
 int currentX = 0; // Assuming the plotter starts at x-origin
 int currentY = 0; // Assuming the plotter starts at y-origin
@@ -264,7 +264,7 @@ void freeGPIO(int gpio) {
 bool gotoXYpoint(const int x, const int y) {
     int oldX = currentX; // OldX is the original y-coordinate of the motor
     int oldY = currentY; // OldY is the original y-coordinate of the motor
-    float precision = 0.1; // This is the maximum amount of precision I think we should allow
+    float precision = 1; // This is the maximum amount of precision I think we should allow
     float masterslope = ((float)y - (float)oldY) / ((float)x - (float)oldX); // This slope is the slope that we're always checking with.  Eqn of slope is (y2-y1)/(x2-x1
     float currentslope = ((float)y - (float)currentY) / ((float)x - (float)currentX); // This is the slope that is recalculated with every new step.
     Direction directionX; // Variable helps specify the direction that the motor will always be going, there could be a better way, but for now I have specified an individual direction for both the x and y
@@ -290,7 +290,6 @@ bool gotoXYpoint(const int x, const int y) {
     }
 
     if (currentX == x && currentY == y) { // For the scenario of the (x,y) being a single point
-        std::cout << "suck my dick" << std::endl ;
         return true;
     }
 
@@ -299,7 +298,6 @@ bool gotoXYpoint(const int x, const int y) {
             axis = Y;
             stepMotor(axis, directionY);
             currentY = currentY + (-2 * changeofY + 1);
-            std::cout << "suck" << std::endl ;
         }
         return true;
     }
@@ -309,31 +307,34 @@ bool gotoXYpoint(const int x, const int y) {
             axis = X;
             stepMotor(axis, directionX);
             currentX = currentX + (-2 * changeofX + 1);
-            std::cout << "dick" << std::endl ;
         }
         return true;
     }
 
-
     while (x != currentX || y != currentY) {
+        std::cout << "x:" << x << " currentX:"<< currentX << std::endl;
+        std::cout << "y:" << y << " currentY:"<< currentY << std::endl;
 
-        while (currentslope > (masterslope - precision)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the X increases
+        while (currentslope >= (masterslope - precision) && currentslope <= (masterslope + precision) && x != currentX) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the X increases
             axis = X;
             stepMotor(axis, directionX); // This should make one xs - step towards the desired point.
             currentX = currentX + (-2 * changeofX + 1); // The new currentX location. The "-2*directionX + 1" is the way I can determine whether it increases or decreases. lol its jokes
             currentslope = ((float)y - (float)currentY) / ((float)x - (float)currentX);
-            std::cout << "Y: " << y <<" "<< currentY << std::endl;
-            std::cout << "X: " << x <<" "<< currentX << std::endl;
-            std::cout << "slope: " << currentslope <<" "<< masterslope << std::endl;
-            std::cout << "suck this:" << currentslope << ">" << masterslope-precision << std::endl;
-
+            std::cout << "suck this:" << currentslope << "x" << masterslope << std::endl;
         }
-        while (currentslope < (masterslope + precision)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the Y increases
+        while (currentslope < (masterslope - precision) || currentslope > (masterslope + precision)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the Y increases
             axis = Y;
             stepMotor(axis, directionY); // This should make one Y-step towards the desired point.
             currentY = currentY + (-2 * changeofY + 1); // The new currentY location. The "-2*directionY + 1" is the way I can determine whether it increases or decreases. lol its jokes
             currentslope = ((float)y - (float)currentY) / ((float)x - (float)currentX);
+            std::cout << "suck this:" << currentslope << "y" << masterslope-precision << std::endl;
         }
+
+       /* if (x == currentX){
+            axis = Y;
+            stepMotor(axis, directionY); // This should make one Y-step towards the desired point.
+            currentY = currentY + (-2 * changeofY + 1);
+        }*/
 
     }
 
