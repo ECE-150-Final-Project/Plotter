@@ -30,15 +30,13 @@ enum Direction {
 
 PolynomialComponent *stringToPolynomialFunction(const char input[]);
 
-/**
- * Steps the motor a single 1.8 degree step
- * @param direction A boolean value that determines if you want the motor to go clockwise or not.
- * @param axis The gpio pin your motor direction is attached to.
- * @param gpioStp The gpio pin your motor stp is attached to.
- */
 bool stepMotor(AXIS axis, Direction direction);
 
+bool stepMotor(AXIS axis, Direction direction, const int stepTime);
+
 void requestGPIOAndSetDirectionOutput(int gpio);
+
+void requestGPIOAndSetDirectionInput(int gpio);
 
 void freeGPIO(int gpio);
 
@@ -46,21 +44,23 @@ bool readGPIO(int gpio);
 
 bool gotoXYpoint(int x, int y);
 
+bool gotoZero();
+
 /////////////////////////////////////////////////////
 // Global Variables:
 
 const int X_AXIS_DIRECTION_GPIO = 0;
 const int X_AXIS_STEP_GPIO = 1;
-const int Y_AXIS_DIRECTION_GPIO = 2;
-const int Y_AXIS_STEP_GPIO = 3;
+const int Y_AXIS_DIRECTION_GPIO = 19;
+const int Y_AXIS_STEP_GPIO = 18;
 
-const int X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 6;
-const int X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 19;
-const int Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 18;
-const int Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 11;
+const int X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 45;
+const int X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 46;
+const int Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 2;
+const int Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 3;
 
 
-const int STEP_TIME = 10* 1000; //time it takes to step a stepper motor in microseconds.
+const int STEP_TIME = 10 * 1000; //time it takes to step a stepper motor in microseconds.
 
 int currentX = 0; // Assuming the plotter starts at x-origin
 int currentY = 0; // Assuming the plotter starts at y-origin
@@ -188,6 +188,95 @@ bool stepMotor(AXIS axis, Direction direction) {
     gpio_set_value(stepGPIO, 1);
     //sleep for a few milliseconds, because you need to let the coils charge etc.
     usleep(STEP_TIME);
+    //pull step to GND, because its GND activated:
+    gpio_set_value(stepGPIO, 0);
+    return true;
+}
+
+bool stepMotor(AXIS axis, Direction direction, const int stepTime) {
+
+    //Local step and direction GPIOs so that they can be set based on inputs.
+    int stepGPIO;
+    int dirGPIO;
+    switch (axis) {
+        case X:
+            stepGPIO = X_AXIS_STEP_GPIO;
+            dirGPIO = X_AXIS_DIRECTION_GPIO;
+            break;
+        case Y:
+            stepGPIO = Y_AXIS_STEP_GPIO;
+            dirGPIO = Y_AXIS_DIRECTION_GPIO;
+            break;
+    }
+
+    switch (direction) {
+        case CW:
+
+            //Check to see if the limit switch is yelling at you:
+            //Gotta determine if it's the X or the Y axis first though.
+            //IF Y and if CW, then use Limit Y MAX.
+            if (stepGPIO == Y_AXIS_STEP_GPIO && readGPIO(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO)) {
+                std::cout << "Failed to step motor, Read Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO Limit switch true."
+                          << std::endl;
+                if (readGPIO(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO) == -1) {
+                    perror("Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO NOT DEFINED");
+                    throw std::exception();
+                }
+                return false;
+            }
+            //IF X and CW, then use Limit X MAX.
+            if (stepGPIO == X_AXIS_STEP_GPIO && readGPIO(X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO)) {
+                std::cout << "Failed to step motor, X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO Read Limit switch true."
+                          << std::endl;
+                if (readGPIO(X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO) == -1) {
+                    perror("X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO NOT DEFINED");
+                    throw std::exception();
+                }
+                return false;
+            }
+
+            //set directionGPIO to HIGH, because GND is CW.
+            gpio_set_value(dirGPIO, 1);
+            break;
+        case CCW:
+
+            //Check to see if the limit switch is yelling at you:
+            //Gotta determine if it's the X or the Y axis first though.
+            //IF Y and if CCW, then use Limit Y MIN.
+            if (stepGPIO == Y_AXIS_STEP_GPIO && readGPIO(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO)) {
+                std::cout << "Failed to step motor, Read Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO Limit switch true."
+                          << std::endl;
+                if (readGPIO(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO) == -1) {
+                    perror("Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO NOT DEFINED");
+                    throw std::exception();
+                }
+                return false;
+            }
+            //IF X and CCW, then use Limit X MIN.
+            if (stepGPIO == X_AXIS_STEP_GPIO && readGPIO(X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO)) {
+                std::cout << "Failed to step motor, Read X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO Limit switch true."
+                          << std::endl;
+                if (readGPIO(X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO) == -1) {
+                    perror("X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO NOT DEFINED");
+                    throw std::exception();
+                }
+                return false;
+            }
+
+            //set directionGPIO to GND, because HIGH is CCW.
+            gpio_set_value(dirGPIO, 0);
+            break;
+    }
+
+    //sleep for a few more milliseconds, because this function will probably
+    //be called consecutively all the time with no breaks.
+    //We also need to allow time for the direction pin to charge up.
+    usleep(stepTime);
+
+    //pulse step on:
+    gpio_set_value(stepGPIO, 1);
+    //sleep for a few milliseconds, because you need to let the coils charge etc.
+    usleep(stepTime);
     //pull step to GND, because its GND activated:
     gpio_set_value(stepGPIO, 0);
     return true;
@@ -346,6 +435,11 @@ bool gotoXYpoint(const int x, const int y) {
     return true;
 }
 
+bool gotoZero() {
+    while(stepMotor(X, CCW, 1 * 1000) || stepMotor(Y, CCW, 1 * 1000));
+    return true;
+}
+
 bool readGPIO(int gpio) {
     //First check the direction of the GPIO:
 //    int direction = gpio_get_direction(gpio);
@@ -362,8 +456,9 @@ bool readGPIO(int gpio) {
 }
 
 int main(const int argc, const char *const argv[]) {
-    int i;
-    //
+
+    std::cout << "Did you remember to set uart1 to gpio?" << std::endl;
+
     requestGPIOAndSetDirectionOutput(X_AXIS_DIRECTION_GPIO);
     requestGPIOAndSetDirectionOutput(X_AXIS_STEP_GPIO);
     requestGPIOAndSetDirectionOutput(Y_AXIS_DIRECTION_GPIO);
@@ -374,47 +469,59 @@ int main(const int argc, const char *const argv[]) {
     requestGPIOAndSetDirectionInput(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
     requestGPIOAndSetDirectionInput(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO);
 
-
-
-    //Accept inputs for testing purposes:
-    Direction direction;
-    AXIS axis;
-
-    int numSteps = 0;
-
-//    if (!(strcmp(argv[1], "CCW"))) {
+///////////////////////////////////////////////////////////////////////
+////////StepMotor testing:
+//    Direction direction;
+//    AXIS axis;
+//
+//    int numSteps = 0;
+//
+//    if (!(strcmp(argv[1], "X"))) {
+//        axis = X;
+//    } else if (!(strcmp(argv[1], "Y"))) {
+//        axis = Y;
+//    } else {
+//        axis = Y;
+//    }
+//
+//    if (!(strcmp(argv[2], "CCW"))) {
 //        direction = CCW;
-//    } else if (!(strcmp(argv[1], "CW"))) {
+//    } else if (!(strcmp(argv[2], "CW"))) {
 //        direction = CW;
 //    } else {
 //        direction = CCW;
 //    }
 //
-//    if (!(strcmp(argv[2], "X"))) {
-//        axis = X;
-//    } else if (!(strcmp(argv[2], "Y"))) {
-//        axis = Y;
-//    } else {
-//        axis = X;
-//    }
-
+//
 //    // Set the gpio from positive to negative 20 times
 //    printf("> begin stepping the motor!\n");
-//    for (i = 0; i < 10000; i++) {
+//    for (int i = 0; i < 10000; i++) {
 //        if (stepMotor(axis, direction)) {
-//            numSteps++;z
+//            numSteps++;
 //        } else {
 //            std::cout << "numSteps: " << numSteps << std::endl;
 //        }
 //
 //    }
 
+
+///////////////////////////////////////////////////////////////////////
+/////////GotoZero testing:
+    gotoZero();
+
+
+///////////////////////////////////////////////////////////////////////
+/////////Goto testing:
     int x = atoi(argv[1]);
     int y = atoi(argv[2]);
-
-    //////////////////////////////////////////////////////
-    //Goto testing:
     gotoXYpoint(x, y);
+
+///////////////////////////////////////////////////////////////////////
+/////////More goto testing:
+    gotoXYpoint(x - 50, y - 40);
+    gotoXYpoint(x + 60, y - 40);
+    gotoZero();
+
 
 
     std::cout << "Free GPIOs that are Outputs: " << std::endl;
