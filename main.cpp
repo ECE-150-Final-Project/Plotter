@@ -65,6 +65,8 @@ const int STEP_TIME = 10* 1000; //time it takes to step a stepper motor in micro
 int currentX = 0; // Assuming the plotter starts at x-origin
 int currentY = 0; // Assuming the plotter starts at y-origin
 
+const float SLOPE_PRECISION = 1;
+
 /////////////////////////////////////////////////////
 // Function Definitions:
 
@@ -264,7 +266,7 @@ void freeGPIO(int gpio) {
 bool gotoXYpoint(const int x, const int y) {
     int oldX = currentX; // OldX is the original y-coordinate of the motor
     int oldY = currentY; // OldY is the original y-coordinate of the motor
-    float precision = 1; // This is the maximum amount of precision I think we should allow
+//    float SLOPE_PRECISION = 1; // This is the maximum amount of precision I think we should allow
     float masterslope = ((float)y - (float)oldY) / ((float)x - (float)oldX); // This slope is the slope that we're always checking with.  Eqn of slope is (y2-y1)/(x2-x1
     float currentslope = ((float)y - (float)currentY) / ((float)x - (float)currentX); // This is the slope that is recalculated with every new step.
     Direction directionX; // Variable helps specify the direction that the motor will always be going, there could be a better way, but for now I have specified an individual direction for both the x and y
@@ -272,6 +274,8 @@ bool gotoXYpoint(const int x, const int y) {
     AXIS axis;
     int changeofX;
     int changeofY;
+//    double SLOPE_PRECISION =( ( ((float)y - (float)oldY)/((float)x - (float)oldX-1) )-( ((float)y - (float)oldY)/((float)x - (float)oldX) ) * 100);
+//    double SLOPE_PRECISION = 1;
 
     if (x > currentX) { // This determines the original X-direction of the motor.
         directionX = CW;
@@ -315,19 +319,19 @@ bool gotoXYpoint(const int x, const int y) {
         std::cout << "x:" << x << " currentX:"<< currentX << std::endl;
         std::cout << "y:" << y << " currentY:"<< currentY << std::endl;
 
-        while (currentslope >= (masterslope - precision) && currentslope <= (masterslope + precision) && x != currentX) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the X increases
+        while (currentslope >= (masterslope - SLOPE_PRECISION) && currentslope <= (masterslope + SLOPE_PRECISION) && x != currentX) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the X increases
             axis = X;
             stepMotor(axis, directionX); // This should make one xs - step towards the desired point.
             currentX = currentX + (-2 * changeofX + 1); // The new currentX location. The "-2*directionX + 1" is the way I can determine whether it increases or decreases. lol its jokes
             currentslope = ((float)y - (float)currentY) / ((float)x - (float)currentX);
             std::cout << "suck this:" << currentslope << "x" << masterslope << std::endl;
         }
-        while (currentslope < (masterslope - precision) || currentslope > (masterslope + precision)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the Y increases
+        while (currentslope < (masterslope - SLOPE_PRECISION) || currentslope > (masterslope + SLOPE_PRECISION)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the Y increases
             axis = Y;
             stepMotor(axis, directionY); // This should make one Y-step towards the desired point.
             currentY = currentY + (-2 * changeofY + 1); // The new currentY location. The "-2*directionY + 1" is the way I can determine whether it increases or decreases. lol its jokes
             currentslope = ((float)y - (float)currentY) / ((float)x - (float)currentX);
-            std::cout << "suck this:" << currentslope << "y" << masterslope-precision << std::endl;
+            std::cout << "suck this:" << currentslope << "y" << masterslope-SLOPE_PRECISION << std::endl;
         }
 
        /* if (x == currentX){
@@ -398,7 +402,7 @@ int main(const int argc, const char *const argv[]) {
 //    printf("> begin stepping the motor!\n");
 //    for (i = 0; i < 10000; i++) {
 //        if (stepMotor(axis, direction)) {
-//            numSteps++;
+//            numSteps++;z
 //        } else {
 //            std::cout << "numSteps: " << numSteps << std::endl;
 //        }
