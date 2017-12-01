@@ -38,6 +38,10 @@ void requestGPIOAndSetDirectionOutput(int gpio);
 
 void requestGPIOAndSetDirectionInput(int gpio);
 
+void startPWM(int gpio, int frequency, int dutyCycle);
+
+void stopPWM(int gpio);
+
 void freeGPIO(int gpio);
 
 bool readGPIO(int gpio);
@@ -453,6 +457,24 @@ bool readGPIO(int gpio) {
 //        perror("Can't read GPIO, You don't understand GPIOF_DIR_OUT vs GPIOF_DIR_IN");
 //        throw std::exception();
 //    }
+}
+
+void startPWM(int gpio, int frequency, int dutyCycle) {
+    int gpioRequest;
+    if ((gpioRequest = gpio_is_requested(gpio)) < 0) {
+        perror("gpio_is_requested");
+        throw std::exception();
+    }
+
+    std::string command = "fast-gpio pwm ";
+    std::string totalCommand = command + std::to_string(gpio) + " " + std::to_string(frequency) + " " + std::to_string(dutyCycle);
+    system(totalCommand.c_str());
+}
+
+void stopPWM(int gpio) {
+    std::string command = "fast-gpio set ";
+    std::string totalCommand = command + std::to_string(gpio) + " 0";
+    system(totalCommand.c_str());
 }
 
 int main(const int argc, const char *const argv[]) {
