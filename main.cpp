@@ -78,11 +78,17 @@ bool gotoZero();
 
 const int X_AXIS_DIRECTION_GPIO = 0;
 const int X_AXIS_STEP_GPIO = 1;
-const int Y_AXIS_DIRECTION_GPIO = 19;
-const int Y_AXIS_STEP_GPIO = 18;
+const int Y_AXIS_DIRECTION_GPIO = 5; //SDA I2C GROUP ONION OMEGA
+const int Y_AXIS_STEP_GPIO = 4; //SCL I2C GROUP ONION OMEGA
 
-const int X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 45;
-const int X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 46;
+const int SERVO_PIN = 18; //PWM0 GROUP ON ONION OMEGA
+const int SERVO_FREQUENCY = 50; //50Hz
+const int SERVO_UP_DUTY_CYCLE = 50; //50% duty cycle for up
+const int SERVO_DOWN_DUTY_CYCLE = 0; //0% duty cycle for down
+const int SERVO_CHANGE_TIME = 100 * 1000; //Time required for the servo to change its position
+
+const int X_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 45; //TX1 UART1 GROUP ONION OMEGA
+const int X_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 46; //RX1 UART1 GROUP ONION OMEGA
 const int Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 2;
 const int Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 3;
 
@@ -749,11 +755,15 @@ void stopPWM(int gpio) {
 
 bool liftPen() {
     std::cout << "Lifted Pen." << std::endl;
+    startPWM(SERVO_PIN, SERVO_FREQUENCY, SERVO_UP_DUTY_CYCLE);
+    usleep(SERVO_CHANGE_TIME);
     return true;
 }
 
 bool lowerPen() {
     std::cout << "Lowered Pen." << std::endl;
+    startPWM(SERVO_PIN, SERVO_FREQUENCY, SERVO_DOWN_DUTY_CYCLE);
+    usleep(SERVO_CHANGE_TIME);
     return true;
 }
 
@@ -772,7 +782,7 @@ int main(const int argc, const char *const argv[]) {
     requestGPIOAndSetDirectionInput(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO);
 
 
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////createArrayOfPolynomialPoints testing:
 //    int numPolynomialComponents = 2;
 //    PolynomialComponent polynomial[numPolynomialComponents];
@@ -805,7 +815,7 @@ int main(const int argc, const char *const argv[]) {
 
 
 
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////drawPolynomial testing:
     int numPolynomialComponents = 2;
     PolynomialComponent polynomial[numPolynomialComponents];
@@ -822,7 +832,7 @@ int main(const int argc, const char *const argv[]) {
     float yMin = -1;
     float yMax = 4;
 
-    int numPoints = 10;
+    int numPoints = 100;
 
     ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(polynomial, numPolynomialComponents, xMax, yMin, yMax,
                                                                 xMin, numPoints);
@@ -832,25 +842,21 @@ int main(const int argc, const char *const argv[]) {
                   << std::endl;
     }
 
-////Print everything out machine readable:
-//    for(int i = 0; i < numPoints; i++) {
-//        std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
-//    }
+//Print everything out machine readable:
+    for(int i = 0; i < numPoints; i++) {
+        std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
+    }
 
     drawPolynomial(arrayOfPoints);
 
-//    gotoZero();
-//    std::cout << std::endl;
-//    for(int i = 0; i < numPoints; i++) {
-//        std::cout << "Going to point: (" << (int)arrayOfPoints.points[i].x << ", " << (int)arrayOfPoints.points[i].y << ")" << std::endl;
-//        if (!std::isnan(arrayOfPoints.points[i].y)) {
-//            gotoPoint((int) arrayOfPoints.points[i].x, (int) arrayOfPoints.points[i].y);
-//        }
-//    }
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////Servo (Pen) Motor testing:
+//    liftPen();
+//    lowerPen();
 
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////StepMotor testing:
 //    Direction direction;
 //    AXIS axis;
@@ -885,7 +891,7 @@ int main(const int argc, const char *const argv[]) {
 //
 //    }
 
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////Determine total size of grid testing:
 //    gotoZero();
 //    Direction direction;
@@ -923,18 +929,18 @@ int main(const int argc, const char *const argv[]) {
 //    }
 
 
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////GotoZero testing:
 //    gotoZero();
 
 
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////Goto testing:
 //    int x = atoi(argv[1]);
 //    int y = atoi(argv[2]);
 //    gotoPoint(x, y);
 
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////More goto testing:
 //    gotoPoint(x - 50, y - 40);
 //    gotoPoint(x + 60, y - 40);
