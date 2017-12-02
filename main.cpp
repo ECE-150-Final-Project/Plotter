@@ -62,10 +62,12 @@ void freeGPIO(int gpio);
 
 bool readGPIO(int gpio);
 
-bool gotoXYpoint(int x, int y);
+bool gotoPoint(int x, int y);
+
+bool gotoPoint(Point point);
 
 //TODO: Create drawPolynomial Function:
-bool drawPolynomial(ArrayOfPoints);
+bool drawPolynomial(ArrayOfPoints points);
 
 bool gotoZero();
 
@@ -83,7 +85,7 @@ const int Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 2;
 const int Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 3;
 
 
-const int STEP_TIME = 5 * 1000; //time it takes to step a stepper motor in microseconds.
+const int STEP_TIME = 2 * 1000; //time it takes to step a stepper motor in microseconds.
 const float X_MAX = 1650; //The x-limit of the plotter.
 const float Y_MAX = 2100; //The y-limit of the plotter.
 
@@ -429,6 +431,38 @@ bool stepMotor(AXIS axis, Direction direction, const int stepTime) {
     return true;
 }
 
+bool drawPolynomial(ArrayOfPoints points) {
+
+    //First of all, lift the pen, and go to zero!
+    liftPen();
+    gotoZero();
+//Print everything out human readable:
+    for(int i = 0; i < points.numPoints; i++) {
+        std::cout << "Point " << i+1 << ": (" << points.points[i].x << ", " << points.points[i].y << ")" << std::endl;
+    }
+
+    gotoZero();
+    std::cout << std::endl;
+    bool liftedPen = true;
+    bool gotToValidPoint = false;
+    for(int i = 0; i < points.numPoints; i++) {
+        std::cout << "Going to point: (" << (int)points.points[i].x << ", " << (int)points.points[i].y << ")" << std::endl;
+        if (!std::isnan(points.points[i].y)) {
+            if(liftedPen && gotToValidPoint) {
+                lowerPen();
+                liftedPen = false;
+            }
+            gotoPoint((int) points.points[i].x, (int) points.points[i].y);
+            gotToValidPoint = true;
+        } else {
+            if (liftedPen) {
+                liftPen();
+            }
+            liftedPen = true;
+        }
+    }
+}
+
 void requestGPIOAndSetDirectionOutput(int gpio) {
     int gpioRequest;
     int gpioDirection;
@@ -500,7 +534,7 @@ void freeGPIO(int gpio) {
 }
 
 //TODO: Create overload for this function that accepts a struct Point.
-bool gotoXYpoint(const int x, const int y) {
+bool gotoPoint(int x, int y) {
     int oldX = currentX; // OldX is the original y-coordinate of the motor
     int oldY = currentY; // OldY is the original y-coordinate of the motor
 //    float SLOPE_PRECISION = 1; // This is the maximum amount of precision I think we should allow
@@ -590,6 +624,97 @@ bool gotoXYpoint(const int x, const int y) {
     return true;
 }
 
+bool gotoPoint(Point point) {
+    int oldX = currentX; // OldX is the original y-coordinate of the motor
+    int oldY = currentY; // OldY is the original y-coordinate of the motor
+//    float SLOPE_PRECISION = 1; // This is the maximum amount of precision I think we should allow
+    float masterslope = ((float) point.y - (float) oldY) / ((float) point.x -
+                                                      (float) oldX); // This slope is the slope that we're always checking with.  Eqn of slope is (y2-y1)/(x2-x1
+    float currentslope = ((float) point.y - (float) currentY) /
+                         ((float) point.x - (float) currentX); // This is the slope that is recalculated with every new step.
+    Direction directionX; // Variable helps specify the direction that the motor will always be going, there could be a better way, but for now I have specified an individual direction for both the x and y
+    Direction directionY;
+    AXIS axis;
+    int changeofX;
+    int changeofY;
+//    double SLOPE_PRECISION =( ( ((float)y - (float)oldY)/((float)x - (float)oldX-1) )-( ((float)y - (float)oldY)/((float)x - (float)oldX) ) * 100);
+//    double SLOPE_PRECISION = 1;
+
+    if (point.x > currentX) { // This determines the original X-direction of the motor.
+        directionX = CW;
+        changeofX = 0;
+    } else if (point.x < currentX) {
+        directionX = CCW;
+        changeofX = 1;
+    }
+
+    if (point.y > currentY) { // This determines the original Y-direction of the motor.
+        directionY = CW;
+        changeofY = 0;
+    } else if (point.y < currentY) {
+        directionY = CCW;
+        changeofY = 1;
+    }
+
+    if (currentX == point.x && currentY == point.y) { // For the scenario of the (x,y) being a single point
+        return true;
+    }
+
+    if (currentX == point.x) { // For the scenario of the (x,y) resulting in a vertical line
+        while (currentY != point.y) {
+            axis = Y;
+            stepMotor(axis, directionY);
+            currentY = currentY + (-2 * changeofY + 1);
+        }
+        return true;
+    }
+
+    if (currentY == point.y) { // For the scenario of the (x,y) resulting in a horizontal line
+        while (currentX != point.x) {
+            axis = X;
+            stepMotor(axis, directionX);
+            currentX = currentX + (-2 * changeofX + 1);
+        }
+        return true;
+    }
+
+    while (point.x != currentX || point.y != currentY) {
+//        std::cout << "x:" << x << " currentX:" << currentX << std::endl;
+//        std::cout << "y:" << y << " currentY:" << currentY << std::endl;
+
+        while (currentslope >= (masterslope - SLOPE_PRECISION) && currentslope <= (masterslope + SLOPE_PRECISION) &&
+                point.x !=
+               currentX) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the X increases
+            axis = X;
+            stepMotor(axis, directionX); // This should make one xs - step towards the desired point.
+            currentX = currentX + (-2 * changeofX +
+                                   1); // The new currentX location. The "-2*directionX + 1" is the way I can determine whether it increases or decreases. lol its jokes
+            currentslope = ((float) point.y - (float) currentY) / ((float) point.x - (float) currentX);
+//            std::cout << "suck this:" << currentslope << "x" << masterslope << std::endl;
+        }
+        while (currentslope < (masterslope - SLOPE_PRECISION) || currentslope > (masterslope +
+                                                                                 SLOPE_PRECISION)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the Y increases
+            axis = Y;
+            stepMotor(axis, directionY); // This should make one Y-step towards the desired point.
+            currentY = currentY + (-2 * changeofY +
+                                   1); // The new currentY location. The "-2*directionY + 1" is the way I can determine whether it increases or decreases. lol its jokes
+            currentslope = ((float) point.y - (float) currentY) / ((float) point.x - (float) currentX);
+//            std::cout << "suck this:" << currentslope << "y" << masterslope - SLOPE_PRECISION << std::endl;
+        }
+
+        /* if (x == currentX){
+             axis = Y;
+             stepMotor(axis, directionY); // This should make one Y-step towards the desired point.
+             currentY = currentY + (-2 * changeofY + 1);
+         }*/
+
+    }
+
+
+    return true;
+}
+
+
 bool gotoZero() {
     while (stepMotor(X, CCW, 1 * 1000) || stepMotor(Y, CCW, 1 * 1000));
     return true;
@@ -627,6 +752,16 @@ void stopPWM(int gpio) {
     std::string command = "fast-gpio set ";
     std::string totalCommand = command + std::to_string(gpio) + " 0";
     system(totalCommand.c_str());
+}
+
+bool liftPen() {
+    std::cout << "Lifted Pen." << std::endl;
+    return true;
+}
+
+bool lowerPen() {
+    std::cout << "Lowered Pen." << std::endl;
+    return true;
 }
 
 int main(const int argc, const char *const argv[]) {
@@ -694,7 +829,7 @@ int main(const int argc, const char *const argv[]) {
     float yMin = -1;
     float yMax = 4;
 
-    int numPoints = 10;
+    int numPoints = 100;
 
     ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(polynomial, numPolynomialComponents, xMax, yMin, yMax,
                                                                 xMin, numPoints);
@@ -703,19 +838,21 @@ int main(const int argc, const char *const argv[]) {
         std::cout << "Point " << i+1 << ": (" << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << ")" << std::endl;
     }
 
-//Print everything out machine readable:
-    for(int i = 0; i < numPoints; i++) {
-        std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
-    }
+////Print everything out machine readable:
+//    for(int i = 0; i < numPoints; i++) {
+//        std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
+//    }
 
-    gotoZero();
-    std::cout << std::endl;
-    for(int i = 0; i < numPoints; i++) {
-        std::cout << "Going to point: (" << (int)arrayOfPoints.points[i].x << ", " << (int)arrayOfPoints.points[i].y << ")" << std::endl;
-        if (!std::isnan(arrayOfPoints.points[i].y)) {
-            gotoXYpoint((int)arrayOfPoints.points[i].x, (int)arrayOfPoints.points[i].y);
-        }
-    }
+    drawPolynomial(arrayOfPoints);
+
+//    gotoZero();
+//    std::cout << std::endl;
+//    for(int i = 0; i < numPoints; i++) {
+//        std::cout << "Going to point: (" << (int)arrayOfPoints.points[i].x << ", " << (int)arrayOfPoints.points[i].y << ")" << std::endl;
+//        if (!std::isnan(arrayOfPoints.points[i].y)) {
+//            gotoPoint((int) arrayOfPoints.points[i].x, (int) arrayOfPoints.points[i].y);
+//        }
+//    }
 
 
 
@@ -801,12 +938,12 @@ int main(const int argc, const char *const argv[]) {
 /////////Goto testing:
 //    int x = atoi(argv[1]);
 //    int y = atoi(argv[2]);
-//    gotoXYpoint(x, y);
+//    gotoPoint(x, y);
 
 ///////////////////////////////////////////////////////////////////////
 /////////More goto testing:
-//    gotoXYpoint(x - 50, y - 40);
-//    gotoXYpoint(x + 60, y - 40);
+//    gotoPoint(x - 50, y - 40);
+//    gotoPoint(x + 60, y - 40);
 //    gotoZero();
 
 
