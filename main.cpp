@@ -83,7 +83,7 @@ const int Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO = 2;
 const int Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO = 3;
 
 
-const int STEP_TIME = 10 * 1000; //time it takes to step a stepper motor in microseconds.
+const int STEP_TIME = 5 * 1000; //time it takes to step a stepper motor in microseconds.
 const float X_MAX = 1650; //The x-limit of the plotter.
 const float Y_MAX = 2100; //The y-limit of the plotter.
 
@@ -214,7 +214,7 @@ createArrayOfPolynomialPoints(const PolynomialComponent *polynomial, int numPoly
     float translateX = -points.points[0].x;
 
     //Now, lets find the minimum value of y:
-    float translateY = yMin;
+    float translateY = -yMin;
 
     //Now Lets actually translate them:
     for (int i = 0; i < numPoints; i++) {
@@ -499,7 +499,7 @@ void freeGPIO(int gpio) {
     }
 }
 
-//TODO: Create overflow for this function that accepts a struct Point.
+//TODO: Create overload for this function that accepts a struct Point.
 bool gotoXYpoint(const int x, const int y) {
     int oldX = currentX; // OldX is the original y-coordinate of the motor
     int oldY = currentY; // OldY is the original y-coordinate of the motor
@@ -555,8 +555,8 @@ bool gotoXYpoint(const int x, const int y) {
     }
 
     while (x != currentX || y != currentY) {
-        std::cout << "x:" << x << " currentX:" << currentX << std::endl;
-        std::cout << "y:" << y << " currentY:" << currentY << std::endl;
+//        std::cout << "x:" << x << " currentX:" << currentX << std::endl;
+//        std::cout << "y:" << y << " currentY:" << currentY << std::endl;
 
         while (currentslope >= (masterslope - SLOPE_PRECISION) && currentslope <= (masterslope + SLOPE_PRECISION) &&
                x !=
@@ -566,7 +566,7 @@ bool gotoXYpoint(const int x, const int y) {
             currentX = currentX + (-2 * changeofX +
                                    1); // The new currentX location. The "-2*directionX + 1" is the way I can determine whether it increases or decreases. lol its jokes
             currentslope = ((float) y - (float) currentY) / ((float) x - (float) currentX);
-            std::cout << "suck this:" << currentslope << "x" << masterslope << std::endl;
+//            std::cout << "suck this:" << currentslope << "x" << masterslope << std::endl;
         }
         while (currentslope < (masterslope - SLOPE_PRECISION) || currentslope > (masterslope +
                                                                                  SLOPE_PRECISION)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the Y increases
@@ -575,7 +575,7 @@ bool gotoXYpoint(const int x, const int y) {
             currentY = currentY + (-2 * changeofY +
                                    1); // The new currentY location. The "-2*directionY + 1" is the way I can determine whether it increases or decreases. lol its jokes
             currentslope = ((float) y - (float) currentY) / ((float) x - (float) currentX);
-            std::cout << "suck this:" << currentslope << "y" << masterslope - SLOPE_PRECISION << std::endl;
+//            std::cout << "suck this:" << currentslope << "y" << masterslope - SLOPE_PRECISION << std::endl;
         }
 
         /* if (x == currentX){
@@ -602,7 +602,7 @@ bool readGPIO(int gpio) {
 //        perror("Can't read GPIO, gpio is set to DIR_OUT");
 //        throw std::exception();
 //    } else if (direction == GPIOF_DIR_IN) {
-    std::cout << "Read GPIO: " << gpio << ", Value: " << gpio_get_value(gpio) << std::endl;
+//    std::cout << "Read GPIO: " << gpio << ", Value: " << gpio_get_value(gpio) << std::endl;
     return (bool) gpio_get_value(gpio);
 //    } else {
 //        perror("Can't read GPIO, You don't understand GPIOF_DIR_OUT vs GPIOF_DIR_IN");
@@ -646,6 +646,39 @@ int main(const int argc, const char *const argv[]) {
 
 ///////////////////////////////////////////////////////////////////////
 ////////createArrayOfPolynomialPoints testing:
+//    int numPolynomialComponents = 2;
+//    PolynomialComponent polynomial[numPolynomialComponents];
+//
+//    //Manually enter them because Erik's parse doesn't work quite yet.
+//    polynomial[0].constant = 3;
+//    polynomial[0].exponent = 2;
+//    //Second item:
+//    polynomial[1].constant = 2;
+//    polynomial[1].exponent = 1;
+//
+//    float xMin = -2;
+//    float xMax = 2;
+//    float yMin = -1;
+//    float yMax = 4;
+//
+//    int numPoints = 10;
+//
+//    ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(polynomial, numPolynomialComponents, xMax, yMin, yMax,
+//                                                                xMin, numPoints);
+////Print everything out human readable:
+//    for(int i = 0; i < numPoints; i++) {
+//        std::cout << "Point " << i+1 << ": (" << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << ")" << std::endl;
+//    }
+//
+////Print everything out machine readable:
+//    for(int i = 0; i < numPoints; i++) {
+//        std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
+//    }
+
+
+
+///////////////////////////////////////////////////////////////////////
+////////drawPolynomial testing:
     int numPolynomialComponents = 2;
     PolynomialComponent polynomial[numPolynomialComponents];
 
@@ -674,6 +707,16 @@ int main(const int argc, const char *const argv[]) {
     for(int i = 0; i < numPoints; i++) {
         std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
     }
+
+    gotoZero();
+    std::cout << std::endl;
+    for(int i = 0; i < numPoints; i++) {
+        std::cout << "Going to point: (" << (int)arrayOfPoints.points[i].x << ", " << (int)arrayOfPoints.points[i].y << ")" << std::endl;
+        if (!std::isnan(arrayOfPoints.points[i].y)) {
+            gotoXYpoint((int)arrayOfPoints.points[i].x, (int)arrayOfPoints.points[i].y);
+        }
+    }
+
 
 
 ///////////////////////////////////////////////////////////////////////
