@@ -9,11 +9,14 @@
 
 #include <ugpio/ugpio.h>
 #include <cmath>
+#include <fstream>
 
 /////////////////////////////////////////////////////
 // Type Declarations:
 
 struct PolynomialComponent;
+
+struct StatisticalData;
 
 struct Point;
 
@@ -32,9 +35,6 @@ enum Direction {
 
 /////////////////////////////////////////////////////
 // Function Declarations:
-
-
-PolynomialComponent *stringToPolynomialFunction(const char input[]);
 
 ArrayOfPoints
 createArrayOfPolynomialPoints(const PolynomialComponent *polynomial, int numPolynomialComponents, const float xMax,
@@ -62,16 +62,24 @@ void freeGPIO(int gpio);
 
 bool readGPIO(int gpio);
 
-bool gotoPoint(int x, int y);
+//Returns the distance it took to go to the point specified.
+float gotoPoint(int x, int y);
 
-bool gotoPoint(Point point);
+//Returns the distance it took to go to the point specified.
+float gotoPoint(Point point);
 
 bool gotoPointHelper(const int x, const int y);
 
 //TODO: Create drawPolynomial Function:
-bool drawPolynomial(ArrayOfPoints points);
+StatisticalData drawPolynomial(ArrayOfPoints points);
 
 bool gotoZero();
+
+bool logLine(char message[]);
+
+bool openLogFile(const char filename[]);
+
+bool closeLogFile();
 
 /////////////////////////////////////////////////////
 // Global Variables:
@@ -100,6 +108,9 @@ const float Y_MAX = 2100; //The y-limit of the plotter.
 int currentX = 0; // Assuming the plotter starts at x-origin
 int currentY = 0; // Assuming the plotter starts at y-origin
 
+std::ofstream logFile;
+const char LOG_FILE_NAME[] = "log_file.txt";
+
 const float SLOPE_PRECISION = 1;
 
 /////////////////////////////////////////////////////
@@ -124,31 +135,10 @@ struct ArrayOfPoints {
     int numPoints;
 };
 
-//TODO: Erik needs to make a state machine that converts the input into an array of constants and exponents.
-//Here is the interface that you will implement:
-//This function converts a polynomial in string form to an array of PolynomialComponents. Its return type is PolynomialComponent*, which is an array of polynomial Components.
-PolynomialComponent *stringToPolynomialFunction(const char input[]) {
-
-    //Loop through the string and determine its size. This will be used for the dynamic memory allocation later.
-    int sizeOfString = 0;
-
-//    struct PolynomialComponent* polynomialFunction[sizeOfString];
-    //Note that this thing ^ is created on the stack. If we return it at the end of the function, all the memory inside
-    //it disappears. This is bad. To fix this, what we want to do is do dynamic memory allocation, we want polynomialFunction = new PolynomialFunction[sizeOfString];
-    //But, we can't do that because we're programming in the wonderful language of C. We need to use malloc and free. Malloc is like = new
-    //and free is like delete in c++. Go online and learn:
-    //malloc, and
-    //free.
-
-    //here is an example of how we're gonna do memory allocation. Make sure I did this right!!!
-    //Note that this over-allocated memory, because it allocates memory for characters like 'x', '^', and '+', etc, that are in the string.
-//    struct PolynomialComponent *polynomialFunction = malloc(sizeOfString * sizeof(struct PolynomialComponent));
-    PolynomialComponent *polynomialFunction = new PolynomialComponent[sizeOfString];
-
-    //... convert string to polynomialComponent array ...
-
-    return polynomialFunction;
-}
+struct StatisticalData {
+    float lengthOfTime;
+    float lengthOfFunction;
+};
 
 ArrayOfPoints
 createArrayOfPolynomialPoints(const PolynomialComponent *polynomial, int numPolynomialComponents, const float xMax,
@@ -439,7 +429,16 @@ bool stepMotor(AXIS axis, Direction direction, const int stepTime) {
     return true;
 }
 
-bool drawPolynomial(ArrayOfPoints points) {
+StatisticalData drawPolynomial(ArrayOfPoints points) {
+
+    StatisticalData statisticalData;
+    statisticalData.lengthOfFunction = 0;
+
+    time_t t = time(0);   // get time now
+    struct tm *now = localtime(&t);
+
+    //Get the time relative to the hour of the day. That should be good enough.
+    statisticalData.lengthOfTime = (now->tm_hour * 60 * 60) + (now->tm_min * 60) + (now->tm_sec);
 
     //First of all, lift the pen, and go to zero!
     liftPen();
@@ -461,7 +460,7 @@ bool drawPolynomial(ArrayOfPoints points) {
                 lowerPen();
                 liftedPen = false;
             }
-            gotoPoint(points.points[i]);
+            statisticalData.lengthOfFunction += gotoPoint(points.points[i]);
             gotToValidPoint = true;
         } else {
             if (liftedPen) {
@@ -470,6 +469,14 @@ bool drawPolynomial(ArrayOfPoints points) {
             liftedPen = true;
         }
     }
+
+    t = time(0);   // get time now
+    now = localtime(&t);
+
+    statisticalData.lengthOfTime = (((now->tm_hour * 60 * 60) + (now->tm_min * 60) + (now->tm_sec)) -
+                                    statisticalData.lengthOfTime);
+
+    return statisticalData;
 }
 
 void requestGPIOAndSetDirectionOutput(int gpio) {
@@ -543,7 +550,7 @@ void freeGPIO(int gpio) {
 }
 
 //DONE: Create overload for this function that accepts a struct Point.
-bool gotoPoint(int x, int y) {
+float gotoPoint(int x, int y) {
     int oldX = currentX; // OldX is the original y-coordinate of the motor
     int oldY = currentY; // OldY is the original y-coordinate of the motor
 //    float SLOPE_PRECISION = 1; // This is the maximum amount of precision I think we should allow
@@ -633,7 +640,7 @@ bool gotoPoint(int x, int y) {
     return true;
 }
 
-bool gotoPoint(Point point) {
+float gotoPoint(Point point) {
     int oldX = currentX; // OldX is the original y-coordinate of the motor
     int oldY = currentY; // OldY is the original y-coordinate of the motor
 
@@ -647,7 +654,8 @@ bool gotoPoint(Point point) {
         gotoPointHelper(x, (int) y);
     }
 
-    return true;
+    //Calculate distance using pythagorean theorem:
+    return (float) sqrt(pow(dx, 2) + pow(dy, 2));
 }
 
 //This is a dumb goto point function that simply goes in the shape of an L to get to a point.
@@ -767,6 +775,18 @@ bool lowerPen() {
     return true;
 }
 
+bool logLine(char message[]) {
+    logFile << "Writing this to a file.\n";
+}
+
+bool openLogFile(char filename[]) {
+    logFile.open(filename);
+}
+
+bool closeLogFile() {
+    logFile.close();
+}
+
 int main(const int argc, const char *const argv[]) {
 
     std::cout << "Did you remember to set uart1 to gpio?" << std::endl;
@@ -781,6 +801,7 @@ int main(const int argc, const char *const argv[]) {
     requestGPIOAndSetDirectionInput(Y_AXIS_MAXIMUM_LIMIT_SWITCH_GPIO);
     requestGPIOAndSetDirectionInput(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO);
 
+    openLogFile(LOG_FILE_NAME);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////createArrayOfPolynomialPoints testing:
@@ -817,39 +838,46 @@ int main(const int argc, const char *const argv[]) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////drawPolynomial testing:
-    int numPolynomialComponents = 2;
-    PolynomialComponent polynomial[numPolynomialComponents];
+//    int numPolynomialComponents = 2;
+//    PolynomialComponent polynomial[numPolynomialComponents];
+//
+//    //Manually enter them because Erik's parse doesn't work quite yet.
+//    polynomial[0].constant = 3;
+//    polynomial[0].exponent = 2;
+//    //Second item:
+//    polynomial[1].constant = 2;
+//    polynomial[1].exponent = 1;
+//
+//    float xMin = -2;
+//    float xMax = 2;
+//    float yMin = -1;
+//    float yMax = 4;
+//
+//    int numPoints = 100;
+//
+//    ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(polynomial, numPolynomialComponents, xMax, yMin, yMax,
+//                                                                xMin, numPoints);
+////Print everything out human readable:
+//    for (int i = 0; i < numPoints; i++) {
+//        std::cout << "Point " << i + 1 << ": (" << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << ")"
+//                  << std::endl;
+//    }
+//
+////Print everything out machine readable:
+//    for (int i = 0; i < numPoints; i++) {
+//        std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
+//    }
+//
+//    StatisticalData statisticalData = drawPolynomial(arrayOfPoints);
+//
+//    std::cout << "\nStatisticalData: " << std::endl;
+//    std::cout << "Length of function: " << (statisticalData.lengthOfFunction * 0.2278) / 10.0 << "cm" << std::endl;
+//    std::cout << "Length of time to draw function: " << statisticalData.lengthOfTime << "s" << std::endl;
 
-    //Manually enter them because Erik's parse doesn't work quite yet.
-    polynomial[0].constant = 3;
-    polynomial[0].exponent = 2;
-    //Second item:
-    polynomial[1].constant = 2;
-    polynomial[1].exponent = 1;
-
-    float xMin = -2;
-    float xMax = 2;
-    float yMin = -1;
-    float yMax = 4;
-
-    int numPoints = 100;
-
-    ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(polynomial, numPolynomialComponents, xMax, yMin, yMax,
-                                                                xMin, numPoints);
-//Print everything out human readable:
-    for (int i = 0; i < numPoints; i++) {
-        std::cout << "Point " << i + 1 << ": (" << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << ")"
-                  << std::endl;
-    }
-
-//Print everything out machine readable:
-    for(int i = 0; i < numPoints; i++) {
-        std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
-    }
-
-    drawPolynomial(arrayOfPoints);
-
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////logFile Testing:
+    char logMessage[] = "LogTheThing.";
+    logLine(logMessage);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////Servo (Pen) Motor testing:
@@ -946,6 +974,7 @@ int main(const int argc, const char *const argv[]) {
 //    gotoPoint(x + 60, y - 40);
 //    gotoZero();
 
+    closeLogFile();
 
     std::cout << "Free GPIOs that are Outputs: " << std::endl;
     freeGPIO(X_AXIS_DIRECTION_GPIO);
