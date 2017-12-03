@@ -39,7 +39,7 @@ enum Direction {
 // Function Declarations:
 
 ArrayOfPoints
-createArrayOfPolynomialPoints(const PolynomialComponent *polynomial, int numPolynomialComponents, const float xMax,
+createArrayOfPolynomialPoints(const PolynomialFunction polynomial, int numPolynomialComponents, const float xMax,
                               const float yMin, const float yMax, const float xMin, const int numPoints);
 
 PolynomialFunction stringToPolynomialFunction(const char input[]);
@@ -145,12 +145,12 @@ struct StatisticalData {
 };
 
 struct PolynomialFunction {
-  PolynomialComponent * components;
-  int numComponents;
+    PolynomialComponent *components;
+    int numComponents;
 };
 
 ArrayOfPoints
-createArrayOfPolynomialPoints(const PolynomialComponent *polynomial, int numPolynomialComponents, const float xMax,
+createArrayOfPolynomialPoints(const PolynomialFunction polynomial, int numPolynomialComponents, const float xMax,
                               const float yMin, const float yMax, const float xMin, const int numPoints) {
 
     //Close inputs:
@@ -190,9 +190,10 @@ createArrayOfPolynomialPoints(const PolynomialComponent *polynomial, int numPoly
         //For each x-value in the array:
         for (int i = 0; i < numPoints; i++) {
             //We make a yValue that is the pow(points->points[i].x, polynomial[currentPolynomialComponent].exponent)
-            float yValue = (float) pow(points.points[i].x, (double) polynomial[currentPolynomialComponent].exponent);
+            float yValue = (float) pow(points.points[i].x,
+                                       (double) polynomial.components[currentPolynomialComponent].exponent);
             //Now we scale yValue using the constant.
-            yValue *= (float) polynomial[currentPolynomialComponent].constant;
+            yValue *= (float) polynomial.components[currentPolynomialComponent].constant;
 
             //Then we add our current y value to the point's y value, so that we can add all the polynomial function
             //together.
@@ -260,183 +261,183 @@ createArrayOfPolynomialPoints(const PolynomialComponent *polynomial, int numPoly
     return points;
 }
 
-PolynomialFunction stringToPolynomialFunction(const char input[]){
-  PolynomialFunction function;
-  function.components = new PolynomialComponent[50];
-  function.numComponents = 0;
-  PolynomialFunction rejected;
-  rejected.components = NULL;
-  rejected.numComponents = 0;
+PolynomialFunction stringToPolynomialFunction(const char input[]) {
+    PolynomialFunction function;
+    function.components = new PolynomialComponent[50];
+    function.numComponents = 0;
+    PolynomialFunction rejected;
+    rejected.components = NULL;
+    rejected.numComponents = 0;
 
-  int SizeofString = 1;
-  int m = 0;
-  while(input[m] != 0){
-    SizeofString++;
-    m++;
-  }
-
-  bool Done = false;
-  int iterator = 0;
-  int i = 0;
-  int size = 0;
-  int calculatedvalue = 0;
-  bool notNumber = false;
-  int k = (size - 1);
-  int sum = 0;
-  char temp[SizeofString];
-  while(!Done){
-
-    bool negativeSign = false;
-    PolynomialComponent Section;
-
-    if((input[iterator] == '+') || input[iterator] == '-'){
-      if(input[iterator] == '-'){
-        negativeSign = true;
-      }
-      iterator++;
+    int SizeofString = 1;
+    int m = 0;
+    while (input[m] != 0) {
+        SizeofString++;
+        m++;
     }
-    if(input[iterator] == 'x' || input[iterator] == 'X'){
-      if(negativeSign){
-        Section.constant = -1;
-      }else{
-        Section.constant = 1;
-      }
-    }
-    if(input[iterator] == '0'){
-      while((input[iterator] != '+') || (input[iterator] != '-')){
-        iterator++;
-      }
-    } else {
-////////////////////////////////////////////////////////////////////////////////////////
-      if((input[iterator] >= '1') && (input[iterator] <= '9')){
-        /// Initialize to all nulls for the meme ///
-        for(int i = 0; i < SizeofString; i++){
-          temp[i] = 0;
-        }
 
-        /// Inputing the values into a temp array so we may turn them into ints///
-        notNumber = false;
-        for(int i = 0; !notNumber; i++){
-          temp[i] = input[iterator];
-          iterator++;
+    bool Done = false;
+    int iterator = 0;
+    int i = 0;
+    int size = 0;
+    int calculatedvalue = 0;
+    bool notNumber = false;
+    int k = (size - 1);
+    int sum = 0;
+    char temp[SizeofString];
+    while (!Done) {
 
-         /// If the next value of of iterator is an X, then the for loop will end ///
-         /// If the value after the numbers are not X's then we know that it is an incorrect input to what we have ///
-          if((input[iterator] == 'x') || (input[iterator] == 'X')){
-            notNumber = true;
-          }
-          if(input[iterator] == 0){
-            notNumber = true;
-          }
-        }
-        /// finding the size fo the temp array ///
-        size = 0;
-        while(temp[size] != 0){
-          size++;
-        }
-        /// Time to convert to int///
-        k = (size - 1);
-        calculatedvalue = 0;
-        sum = 0;
-        for(int i = 0; i < size; i++){
-          calculatedvalue = ((int)temp[i] - '0') * pow(10, k);
-          sum = calculatedvalue + sum;
-          k = (k-1);
-          /// Overflow then function fails///
-          if(sum < 0){
-            delete function.components;
-            return rejected;
-          }
-        }
-        ///Negative is true sets the sum negative ///
-        if(negativeSign){
-          sum = -sum;
-        }
-        Section.constant = sum;
-      }
-    }
-/////////////////////////////////////////////////////////////////
-    if(input[iterator+1] == '^'){
-      iterator += 2;
-      for(int i = 0; i < SizeofString; i++){
-        temp[i] = 0;
-      }
+        bool negativeSign = false;
+        PolynomialComponent Section;
 
-      notNumber = false;
-      for(int i = 0; !notNumber; i++){
-       temp[i] = input[iterator];
-       /// If the next value of of iterator is an + or -, then the for loop will end ///
-       /// If the value after the numbers are not +'s or  then we know that it is an incorrect input to what we have ///
-       if((input[iterator+1] == '+') || (input[iterator+1] == '-') || (input[iterator+1] == 0)){
-         notNumber = true;
-       }
-       iterator++;
-      }
-
-      if(input[iterator] == 0){
-        Done = true;
-        /// finding the size fo the temp array ///
-          int size = 0;
-          while(temp[size] != 0){
-            size++;
-          }
-          /// Time to convert to int///
-          calculatedvalue = 0;
-          k = (size - 1);
-          sum = 0;
-          for(int i = 0; i < size; i++){
-            calculatedvalue = ((int)temp[i] - '0') * pow(10, k);
-            sum = calculatedvalue + sum;
-            k = (k-1);
-            /// Overflow then function fails///
-            if(sum < 0){
-              delete function.components;
-              return rejected;
+        if ((input[iterator] == '+') || input[iterator] == '-') {
+            if (input[iterator] == '-') {
+                negativeSign = true;
             }
-          }
-          Section.exponent = sum;
-      } else {
-      /// finding the size fo the temp array ///
-        int size = 0;
-        while(temp[size] != 0){
-          size++;
+            iterator++;
         }
-        /// Time to convert to int///
-        calculatedvalue = 0;
-        k = (size - 1);
-        sum = 0;
-        for(int i = 0; i < size; i++){
-          calculatedvalue = ((int)temp[i] - '0') * pow(10, k);
-          sum = calculatedvalue + sum;
-          k = (k-1);
-          /// Overflow then function fails///
-          if(sum < 0){
-            delete function.components;
-            return rejected;
-          }
+        if (input[iterator] == 'x' || input[iterator] == 'X') {
+            if (negativeSign) {
+                Section.constant = -1;
+            } else {
+                Section.constant = 1;
+            }
         }
-        Section.exponent = sum;
-      }
-      ///
-    } else if ((input[iterator] == 'x' ) || (input[iterator] == 'X')){
-      Section.exponent = 1;
-      iterator++;
-    } else  {
-      Section.exponent = 0;
-      if(input[iterator] == 0){
-        Done = true;
-      } else {
-        iterator++;
-      }
+        if (input[iterator] == '0') {
+            while ((input[iterator] != '+') || (input[iterator] != '-')) {
+                iterator++;
+            }
+        } else {
+////////////////////////////////////////////////////////////////////////////////////////
+            if ((input[iterator] >= '1') && (input[iterator] <= '9')) {
+                /// Initialize to all nulls for the meme ///
+                for (int i = 0; i < SizeofString; i++) {
+                    temp[i] = 0;
+                }
+
+                /// Inputing the values into a temp array so we may turn them into ints///
+                notNumber = false;
+                for (int i = 0; !notNumber; i++) {
+                    temp[i] = input[iterator];
+                    iterator++;
+
+                    /// If the next value of of iterator is an X, then the for loop will end ///
+                    /// If the value after the numbers are not X's then we know that it is an incorrect input to what we have ///
+                    if ((input[iterator] == 'x') || (input[iterator] == 'X')) {
+                        notNumber = true;
+                    }
+                    if (input[iterator] == 0) {
+                        notNumber = true;
+                    }
+                }
+                /// finding the size fo the temp array ///
+                size = 0;
+                while (temp[size] != 0) {
+                    size++;
+                }
+                /// Time to convert to int///
+                k = (size - 1);
+                calculatedvalue = 0;
+                sum = 0;
+                for (int i = 0; i < size; i++) {
+                    calculatedvalue = ((int) temp[i] - '0') * pow(10, k);
+                    sum = calculatedvalue + sum;
+                    k = (k - 1);
+                    /// Overflow then function fails///
+                    if (sum < 0) {
+                        delete function.components;
+                        return rejected;
+                    }
+                }
+                ///Negative is true sets the sum negative ///
+                if (negativeSign) {
+                    sum = -sum;
+                }
+                Section.constant = sum;
+            }
+        }
+/////////////////////////////////////////////////////////////////
+        if (input[iterator + 1] == '^') {
+            iterator += 2;
+            for (int i = 0; i < SizeofString; i++) {
+                temp[i] = 0;
+            }
+
+            notNumber = false;
+            for (int i = 0; !notNumber; i++) {
+                temp[i] = input[iterator];
+                /// If the next value of of iterator is an + or -, then the for loop will end ///
+                /// If the value after the numbers are not +'s or  then we know that it is an incorrect input to what we have ///
+                if ((input[iterator + 1] == '+') || (input[iterator + 1] == '-') || (input[iterator + 1] == 0)) {
+                    notNumber = true;
+                }
+                iterator++;
+            }
+
+            if (input[iterator] == 0) {
+                Done = true;
+                /// finding the size fo the temp array ///
+                int size = 0;
+                while (temp[size] != 0) {
+                    size++;
+                }
+                /// Time to convert to int///
+                calculatedvalue = 0;
+                k = (size - 1);
+                sum = 0;
+                for (int i = 0; i < size; i++) {
+                    calculatedvalue = ((int) temp[i] - '0') * pow(10, k);
+                    sum = calculatedvalue + sum;
+                    k = (k - 1);
+                    /// Overflow then function fails///
+                    if (sum < 0) {
+                        delete function.components;
+                        return rejected;
+                    }
+                }
+                Section.exponent = sum;
+            } else {
+                /// finding the size fo the temp array ///
+                int size = 0;
+                while (temp[size] != 0) {
+                    size++;
+                }
+                /// Time to convert to int///
+                calculatedvalue = 0;
+                k = (size - 1);
+                sum = 0;
+                for (int i = 0; i < size; i++) {
+                    calculatedvalue = ((int) temp[i] - '0') * pow(10, k);
+                    sum = calculatedvalue + sum;
+                    k = (k - 1);
+                    /// Overflow then function fails///
+                    if (sum < 0) {
+                        delete function.components;
+                        return rejected;
+                    }
+                }
+                Section.exponent = sum;
+            }
+            ///
+        } else if ((input[iterator] == 'x') || (input[iterator] == 'X')) {
+            Section.exponent = 1;
+            iterator++;
+        } else {
+            Section.exponent = 0;
+            if (input[iterator] == 0) {
+                Done = true;
+            } else {
+                iterator++;
+            }
+        }
+        function.components[i] = Section;
+        function.numComponents++;
+        i++;
+        if (input[iterator] == 0) {
+            Done = true;
+        }
     }
-    function.components[i] = Section;
-    function.numComponents++;
-    i++;
-    if(input[iterator] == 0) {
-      Done = true;
-    }
-  }
-  return function;
+    return function;
 }
 
 bool stepMotor(AXIS axis, Direction direction) {
@@ -967,7 +968,7 @@ bool logLine(char message[]) {
     logFile << "Writing this to a file.\n";
 }
 
-bool openLogFile(char filename[]) {
+bool openLogFile(const char filename[]) {
     logFile.open(filename);
 }
 
@@ -991,22 +992,17 @@ int main(const int argc, const char *const argv[]) {
 
     openLogFile(LOG_FILE_NAME);
 
-    // for(int i = 0; i < function.numComponents ; i++) {
-    //   cout << "Polynomial Component " << function.components[i].constant << endl;
-    //   cout << "Polynomial Exponoent " << function.components[i].exponent << endl;
-    // }
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////createArrayOfPolynomialPoints testing:
 //    int numPolynomialComponents = 2;
-//    PolynomialComponent polynomial[numPolynomialComponents];
+//    PolynomialComponent function[numPolynomialComponents];
 //
 //    //Manually enter them because Erik's parse doesn't work quite yet.
-//    polynomial[0].constant = 3;
-//    polynomial[0].exponent = 2;
+//    function[0].constant = 3;
+//    function[0].exponent = 2;
 //    //Second item:
-//    polynomial[1].constant = 2;
-//    polynomial[1].exponent = 1;
+//    function[1].constant = 2;
+//    function[1].exponent = 1;
 //
 //    float xMin = -2;
 //    float xMax = 2;
@@ -1015,7 +1011,7 @@ int main(const int argc, const char *const argv[]) {
 //
 //    int numPoints = 10;
 //
-//    ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(polynomial, numPolynomialComponents, xMax, yMin, yMax,
+//    ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(function, numPolynomialComponents, xMax, yMin, yMax,
 //                                                                xMin, numPoints);
 ////Print everything out human readable:
 //    for(int i = 0; i < numPoints; i++) {
@@ -1031,41 +1027,50 @@ int main(const int argc, const char *const argv[]) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////drawPolynomial testing:
-//    int numPolynomialComponents = 2;
-//    PolynomialComponent polynomial[numPolynomialComponents];
-//
-//    //Manually enter them because Erik's parse doesn't work quite yet.
-//    polynomial[0].constant = 3;
-//    polynomial[0].exponent = 2;
-//    //Second item:
-//    polynomial[1].constant = 2;
-//    polynomial[1].exponent = 1;
-//
+
+    if (argc < 5) {
+        std::cout << "Usage: <\"ax^b+cx^d+...\">, <xMin>, <xMax>, <yMin>, <yMax>," << std::endl;
+        return 0;
+    }
+
+
+    PolynomialFunction function = stringToPolynomialFunction(argv[1]);
+
+    for (int i = 0; i < function.numComponents; i++) {
+        std::cout << "Polynomial Component " << function.components[i].constant << std::endl;
+        std::cout << "Polynomial Exponoent " << function.components[i].exponent << std::endl;
+    }
+
 //    float xMin = -2;
 //    float xMax = 2;
 //    float yMin = -1;
 //    float yMax = 4;
-//
-//    int numPoints = 100;
-//
-//    ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(polynomial, numPolynomialComponents, xMax, yMin, yMax,
-//                                                                xMin, numPoints);
-////Print everything out human readable:
-//    for (int i = 0; i < numPoints; i++) {
-//        std::cout << "Point " << i + 1 << ": (" << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << ")"
-//                  << std::endl;
-//    }
-//
-////Print everything out machine readable:
-//    for (int i = 0; i < numPoints; i++) {
-//        std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
-//    }
-//
-//    StatisticalData statisticalData = drawPolynomial(arrayOfPoints);
-//
-//    std::cout << "\nStatisticalData: " << std::endl;
-//    std::cout << "Length of function: " << (statisticalData.lengthOfFunction * 0.2278) / 10.0 << "cm" << std::endl;
-//    std::cout << "Length of time to draw function: " << statisticalData.lengthOfTime << "s" << std::endl;
+
+    float xMin = atoi(argv[2]);
+    float xMax = atoi(argv[3]);
+    float yMin = atoi(argv[4]);
+    float yMax = atoi(argv[5]);
+
+    int numPoints = 100;
+
+    ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(function, function.numComponents, xMax, yMin, yMax,
+                                                                xMin, numPoints);
+//Print everything out human readable:
+    for (int i = 0; i < numPoints; i++) {
+        std::cout << "Point " << i + 1 << ": (" << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << ")"
+                  << std::endl;
+    }
+
+//Print everything out machine readable:
+    for (int i = 0; i < numPoints; i++) {
+        std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
+    }
+
+    StatisticalData statisticalData = drawPolynomial(arrayOfPoints);
+
+    std::cout << "\nStatisticalData: " << std::endl;
+    std::cout << "Length of function: " << (statisticalData.lengthOfFunction * 0.2278) / 10.0 << "cm" << std::endl;
+    std::cout << "Length of time to draw function: " << statisticalData.lengthOfTime << "s" << std::endl;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////logFile Testing:
