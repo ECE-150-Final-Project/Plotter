@@ -79,8 +79,6 @@ StatisticalData drawPolynomial(ArrayOfPoints points);
 
 bool gotoZero();
 
-bool logLine(char message[]);
-
 bool openLogFile(const char filename[]);
 
 bool closeLogFile();
@@ -964,10 +962,6 @@ bool lowerPen() {
     return true;
 }
 
-bool logLine(char message[]) {
-    logFile << "Writing this to a file.\n";
-}
-
 bool openLogFile(const char filename[]) {
     logFile.open(filename);
 }
@@ -1036,6 +1030,11 @@ int main(const int argc, const char *const argv[]) {
 
     PolynomialFunction function = stringToPolynomialFunction(argv[1]);
 
+    if(function.components == nullptr) {
+        std::cout << "Error, please input valid characters: \"" << argv[1] << "\" is not valid." << std::endl;
+
+    }
+
     for (int i = 0; i < function.numComponents; i++) {
         std::cout << "Polynomial Component " << function.components[i].constant << std::endl;
         std::cout << "Polynomial Exponoent " << function.components[i].exponent << std::endl;
@@ -1068,14 +1067,28 @@ int main(const int argc, const char *const argv[]) {
 
     StatisticalData statisticalData = drawPolynomial(arrayOfPoints);
 
-    std::cout << "\nStatisticalData: " << std::endl;
-    std::cout << "Length of function: " << (statisticalData.lengthOfFunction * 0.2278) / 10.0 << "cm" << std::endl;
-    std::cout << "Length of time to draw function: " << statisticalData.lengthOfTime << "s" << std::endl;
+//    std::cout << "\nStatisticalData: " << std::endl;
+//    std::cout << "Length of function: " << (statisticalData.lengthOfFunction * 0.2278) / 10.0 << "cm" << std::endl;
+//    std::cout << "Length of time to draw function: " << statisticalData.lengthOfTime << "s" << std::endl;
+
+    logFile << "X-Y Plotter Log File:\n";
+    logFile << "Statistical Data: \n";
+    logFile << "Length of function: " << (statisticalData.lengthOfFunction* 0.2278) / 10.0 << "cm" << "\n";
+    logFile << "Length of time to draw function: " << statisticalData.lengthOfTime << "s" << "\n";
+    logFile << "\n\n";
+    logFile << "Points that the plotter draws: \n";
+    //Print everything out human readable:
+    for (int i = 0; i < numPoints; i++) {
+        logFile << "Point " << i + 1 << ": (" << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << ")"
+                  << std::endl;
+    }
+    logFile << "\n";
+    logFile << "\n";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////logFile Testing:
-    char logMessage[] = "LogTheThing.";
-    logLine(logMessage);
+//    logFile << "Writing this to a file.\n";
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////Servo (Pen) Motor testing:
