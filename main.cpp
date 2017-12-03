@@ -22,6 +22,8 @@ struct Point;
 
 struct ArrayOfPoints;
 
+struct PolynomialFunction;
+
 //For the step motor function. This just makes it so that in the step motor
 //function, you can specify if you want to x axis to move, or the y axis to move.
 //easy!
@@ -39,6 +41,8 @@ enum Direction {
 ArrayOfPoints
 createArrayOfPolynomialPoints(const PolynomialComponent *polynomial, int numPolynomialComponents, const float xMax,
                               const float yMin, const float yMax, const float xMin, const int numPoints);
+
+PolynomialFunction stringToPolynomialFunction(const char input[]);
 
 bool stepMotor(AXIS axis, Direction direction);
 
@@ -138,6 +142,11 @@ struct ArrayOfPoints {
 struct StatisticalData {
     float lengthOfTime;
     float lengthOfFunction;
+};
+
+struct PolynomialFunction {
+  PolynomialComponent * components;
+  int numComponents;
 };
 
 ArrayOfPoints
@@ -249,6 +258,185 @@ createArrayOfPolynomialPoints(const PolynomialComponent *polynomial, int numPoly
 
     std::cout << "End of whatsit function:" << std::endl << std::endl;
     return points;
+}
+
+PolynomialFunction stringToPolynomialFunction(const char input[]){
+  PolynomialFunction function;
+  function.components = new PolynomialComponent[50];
+  function.numComponents = 0;
+  PolynomialFunction rejected;
+  rejected.components = NULL;
+  rejected.numComponents = 0;
+
+  int SizeofString = 1;
+  int m = 0;
+  while(input[m] != 0){
+    SizeofString++;
+    m++;
+  }
+
+  bool Done = false;
+  int iterator = 0;
+  int i = 0;
+  int size = 0;
+  int calculatedvalue = 0;
+  bool notNumber = false;
+  int k = (size - 1);
+  int sum = 0;
+  char temp[SizeofString];
+  while(!Done){
+
+    bool negativeSign = false;
+    PolynomialComponent Section;
+
+    if((input[iterator] == '+') || input[iterator] == '-'){
+      if(input[iterator] == '-'){
+        negativeSign = true;
+      }
+      iterator++;
+    }
+    if(input[iterator] == 'x' || input[iterator] == 'X'){
+      if(negativeSign){
+        Section.constant = -1;
+      }else{
+        Section.constant = 1;
+      }
+    }
+    if(input[iterator] == '0'){
+      while((input[iterator] != '+') || (input[iterator] != '-')){
+        iterator++;
+      }
+    } else {
+////////////////////////////////////////////////////////////////////////////////////////
+      if((input[iterator] >= '1') && (input[iterator] <= '9')){
+        /// Initialize to all nulls for the meme ///
+        for(int i = 0; i < SizeofString; i++){
+          temp[i] = 0;
+        }
+
+        /// Inputing the values into a temp array so we may turn them into ints///
+        notNumber = false;
+        for(int i = 0; !notNumber; i++){
+          temp[i] = input[iterator];
+          iterator++;
+
+         /// If the next value of of iterator is an X, then the for loop will end ///
+         /// If the value after the numbers are not X's then we know that it is an incorrect input to what we have ///
+          if((input[iterator] == 'x') || (input[iterator] == 'X')){
+            notNumber = true;
+          }
+          if(input[iterator] == 0){
+            notNumber = true;
+          }
+        }
+        /// finding the size fo the temp array ///
+        size = 0;
+        while(temp[size] != 0){
+          size++;
+        }
+        /// Time to convert to int///
+        k = (size - 1);
+        calculatedvalue = 0;
+        sum = 0;
+        for(int i = 0; i < size; i++){
+          calculatedvalue = ((int)temp[i] - '0') * pow(10, k);
+          sum = calculatedvalue + sum;
+          k = (k-1);
+          /// Overflow then function fails///
+          if(sum < 0){
+            delete function.components;
+            return rejected;
+          }
+        }
+        ///Negative is true sets the sum negative ///
+        if(negativeSign){
+          sum = -sum;
+        }
+        Section.constant = sum;
+      }
+    }
+/////////////////////////////////////////////////////////////////
+    if(input[iterator+1] == '^'){
+      iterator += 2;
+      for(int i = 0; i < SizeofString; i++){
+        temp[i] = 0;
+      }
+
+      notNumber = false;
+      for(int i = 0; !notNumber; i++){
+       temp[i] = input[iterator];
+       /// If the next value of of iterator is an + or -, then the for loop will end ///
+       /// If the value after the numbers are not +'s or  then we know that it is an incorrect input to what we have ///
+       if((input[iterator+1] == '+') || (input[iterator+1] == '-') || (input[iterator+1] == 0)){
+         notNumber = true;
+       }
+       iterator++;
+      }
+
+      if(input[iterator] == 0){
+        Done = true;
+        /// finding the size fo the temp array ///
+          int size = 0;
+          while(temp[size] != 0){
+            size++;
+          }
+          /// Time to convert to int///
+          calculatedvalue = 0;
+          k = (size - 1);
+          sum = 0;
+          for(int i = 0; i < size; i++){
+            calculatedvalue = ((int)temp[i] - '0') * pow(10, k);
+            sum = calculatedvalue + sum;
+            k = (k-1);
+            /// Overflow then function fails///
+            if(sum < 0){
+              delete function.components;
+              return rejected;
+            }
+          }
+          Section.exponent = sum;
+      } else {
+      /// finding the size fo the temp array ///
+        int size = 0;
+        while(temp[size] != 0){
+          size++;
+        }
+        /// Time to convert to int///
+        calculatedvalue = 0;
+        k = (size - 1);
+        sum = 0;
+        for(int i = 0; i < size; i++){
+          calculatedvalue = ((int)temp[i] - '0') * pow(10, k);
+          sum = calculatedvalue + sum;
+          k = (k-1);
+          /// Overflow then function fails///
+          if(sum < 0){
+            delete function.components;
+            return rejected;
+          }
+        }
+        Section.exponent = sum;
+      }
+      ///
+    } else if ((input[iterator] == 'x' ) || (input[iterator] == 'X')){
+      Section.exponent = 1;
+      iterator++;
+    } else  {
+      Section.exponent = 0;
+      if(input[iterator] == 0){
+        Done = true;
+      } else {
+        iterator++;
+      }
+    }
+    function.components[i] = Section;
+    function.numComponents++;
+    i++;
+    if(input[iterator] == 0) {
+      Done = true;
+    }
+  }
+  return function;
 }
 
 bool stepMotor(AXIS axis, Direction direction) {
@@ -802,6 +990,11 @@ int main(const int argc, const char *const argv[]) {
     requestGPIOAndSetDirectionInput(Y_AXIS_MINIMUM_LIMIT_SWITCH_GPIO);
 
     openLogFile(LOG_FILE_NAME);
+
+    // for(int i = 0; i < function.numComponents ; i++) {
+    //   cout << "Polynomial Component " << function.components[i].constant << endl;
+    //   cout << "Polynomial Exponoent " << function.components[i].exponent << endl;
+    // }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////createArrayOfPolynomialPoints testing:
