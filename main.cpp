@@ -1075,6 +1075,7 @@ int main(const int argc, const char *const argv[]) {
     logFile << "Statistical Data: \n";
     logFile << "Length of function: " << (statisticalData.lengthOfFunction* 0.2278) / 10.0 << "cm" << "\n";
     logFile << "Length of time to draw function: " << statisticalData.lengthOfTime << "s" << "\n";
+    logFile << "Line drawing Speed: " << ((statisticalData.lengthOfFunction* 0.2278) / 10.0) / statisticalData.lengthOfTime << "cm/s" << std::endl;
     logFile << "\n\n";
     logFile << "Points that the plotter draws: \n";
     //Print everything out human readable:
