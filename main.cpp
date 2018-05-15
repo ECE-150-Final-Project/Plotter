@@ -52,7 +52,6 @@ void requestGPIOAndSetDirectionOutput(int gpio);
 
 void requestGPIOAndSetDirectionInput(int gpio);
 
-//TODO: create LiftPen function and LowerPen functions:
 //These need a sleep(10ms) command because they are callback methods that will be run.
 bool liftPen();
 
@@ -74,7 +73,6 @@ float gotoPoint(Point point);
 
 bool gotoPointHelper(const int x, const int y);
 
-//TODO: Create drawPolynomial Function:
 StatisticalData drawPolynomial(ArrayOfPoints points);
 
 bool gotoZero();
@@ -214,8 +212,6 @@ createArrayOfPolynomialPoints(const PolynomialFunction polynomial, int numPolyno
         std::cout << "Point " << i + 1 << ": (" << points.points[i].x << ", " << points.points[i].y << ")" << std::endl;
     }
 
-    //TODO: translate all the points to have xmin and ymin at (0,0) and scale them to fit inside of the plotter's range of motion.
-
     //Now, let's translate all these points so that the first x-value is 0, and the lowest y-value is 0.
     //To get where the lowest x-value is, just look at the first item of the array, and then take 0-it and
     //see by how much we need to add to every point to translate the points.
@@ -306,7 +302,6 @@ PolynomialFunction stringToPolynomialFunction(const char input[]) {
                 iterator++;
             }
         } else {
-////////////////////////////////////////////////////////////////////////////////////////
             if ((input[iterator] >= '1') && (input[iterator] <= '9')) {
                 /// Initialize to all nulls for the meme ///
                 for (int i = 0; i < SizeofString; i++) {
@@ -354,7 +349,6 @@ PolynomialFunction stringToPolynomialFunction(const char input[]) {
                 Section.constant = sum;
             }
         }
-/////////////////////////////////////////////////////////////////
         if (input[iterator + 1] == '^') {
             iterator += 2;
             for (int i = 0; i < SizeofString; i++) {
@@ -416,7 +410,6 @@ PolynomialFunction stringToPolynomialFunction(const char input[]) {
                 }
                 Section.exponent = sum;
             }
-            ///
         } else if ((input[iterator] == 'x') || (input[iterator] == 'X')) {
             Section.exponent = 1;
             iterator++;
@@ -630,7 +623,7 @@ StatisticalData drawPolynomial(ArrayOfPoints points) {
     //First of all, lift the pen, and go to zero!
     liftPen();
     gotoZero();
-//Print everything out human readable:
+    //Print everything out human readable:
     for (int i = 0; i < points.numPoints; i++) {
         std::cout << "Point " << i + 1 << ": (" << points.points[i].x << ", " << points.points[i].y << ")" << std::endl;
     }
@@ -685,12 +678,6 @@ void requestGPIOAndSetDirectionOutput(int gpio) {
         }
     }
 
-//     set to input direction
-//    printf("> setting to input\n");
-//    if ((gpioDirection = gpio_direction_input(gpio)) < 0) {
-//        perror("gpio_direction_input");
-//    }
-
     // set to output direction:
     printf("> setting to output\n");
     if ((gpioDirection = gpio_direction_output(gpio, 0)) < 0) {
@@ -717,12 +704,6 @@ void requestGPIOAndSetDirectionInput(int gpio) {
         }
     }
 
-//     set to input direction
-//    printf("> setting to input\n");
-//    if ((gpioDirection = gpio_direction_input(gpio)) < 0) {
-//        perror("gpio_direction_input");
-//    }
-
     // set to output direction:
     printf("> setting to input\n");
     if ((gpioDirection = gpio_direction_input(gpio)) < 0) {
@@ -736,11 +717,9 @@ void freeGPIO(int gpio) {
     }
 }
 
-//DONE: Create overload for this function that accepts a struct Point.
 float gotoPoint(int x, int y) {
     int oldX = currentX; // OldX is the original y-coordinate of the motor
     int oldY = currentY; // OldY is the original y-coordinate of the motor
-//    float SLOPE_PRECISION = 1; // This is the maximum amount of precision I think we should allow
     float masterslope = ((float) y - (float) oldY) / ((float) x -
                                                       (float) oldX); // This slope is the slope that we're always checking with.  Eqn of slope is (y2-y1)/(x2-x1
     float currentslope = ((float) y - (float) currentY) /
@@ -750,8 +729,6 @@ float gotoPoint(int x, int y) {
     AXIS axis;
     int changeofX;
     int changeofY;
-//    double SLOPE_PRECISION =( ( ((float)y - (float)oldY)/((float)x - (float)oldX-1) )-( ((float)y - (float)oldY)/((float)x - (float)oldX) ) * 100);
-//    double SLOPE_PRECISION = 1;
 
     if (x > currentX) { // This determines the original X-direction of the motor.
         directionX = CW;
@@ -792,8 +769,6 @@ float gotoPoint(int x, int y) {
     }
 
     while (x != currentX || y != currentY) {
-//        std::cout << "x:" << x << " currentX:" << currentX << std::endl;
-//        std::cout << "y:" << y << " currentY:" << currentY << std::endl;
 
         while (currentslope >= (masterslope - SLOPE_PRECISION) && currentslope <= (masterslope + SLOPE_PRECISION) &&
                x !=
@@ -803,7 +778,6 @@ float gotoPoint(int x, int y) {
             currentX = currentX + (-2 * changeofX +
                                    1); // The new currentX location. The "-2*directionX + 1" is the way I can determine whether it increases or decreases. lol its jokes
             currentslope = ((float) y - (float) currentY) / ((float) x - (float) currentX);
-//            std::cout << "suck this:" << currentslope << "x" << masterslope << std::endl;
         }
         while (currentslope < (masterslope - SLOPE_PRECISION) || currentslope > (masterslope +
                                                                                  SLOPE_PRECISION)) { // I think this is right.  Exits loop when the currentslope decreases past a critical point.  Should specifiy this while loop is for the Y increases
@@ -812,14 +786,7 @@ float gotoPoint(int x, int y) {
             currentY = currentY + (-2 * changeofY +
                                    1); // The new currentY location. The "-2*directionY + 1" is the way I can determine whether it increases or decreases. lol its jokes
             currentslope = ((float) y - (float) currentY) / ((float) x - (float) currentX);
-//            std::cout << "suck this:" << currentslope << "y" << masterslope - SLOPE_PRECISION << std::endl;
         }
-
-        /* if (x == currentX){
-             axis = Y;
-             stepMotor(axis, directionY); // This should make one Y-step towards the desired point.
-             currentY = currentY + (-2 * changeofY + 1);
-         }*/
 
     }
 
@@ -854,8 +821,6 @@ bool gotoPointHelper(const int x, const int y) {
     AXIS axis;
     int changeofX;
     int changeofY;
-//    double SLOPE_PRECISION =( ( ((float)y - (float)oldY)/((float)x - (float)oldX-1) )-( ((float)y - (float)oldY)/((float)x - (float)oldX) ) * 100);
-//    double SLOPE_PRECISION = 1;
 
     if (x > currentX) { // This determines the original X-direction of the motor.
         directionX = CW;
@@ -916,17 +881,7 @@ bool gotoZero() {
 
 bool readGPIO(int gpio) {
     //First check the direction of the GPIO:
-//    int direction = gpio_get_direction(gpio);
-//    if (direction == GPIOF_DIR_OUT) {
-//        perror("Can't read GPIO, gpio is set to DIR_OUT");
-//        throw std::exception();
-//    } else if (direction == GPIOF_DIR_IN) {
-//    std::cout << "Read GPIO: " << gpio << ", Value: " << gpio_get_value(gpio) << std::endl;
     return (bool) gpio_get_value(gpio);
-//    } else {
-//        perror("Can't read GPIO, You don't understand GPIOF_DIR_OUT vs GPIOF_DIR_IN");
-//        throw std::exception();
-//    }
 }
 
 void startPWM(int gpio, int frequency, int dutyCycle) {
@@ -986,42 +941,6 @@ int main(const int argc, const char *const argv[]) {
 
     openLogFile(LOG_FILE_NAME);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////createArrayOfPolynomialPoints testing:
-//    int numPolynomialComponents = 2;
-//    PolynomialComponent function[numPolynomialComponents];
-//
-//    //Manually enter them because Erik's parse doesn't work quite yet.
-//    function[0].constant = 3;
-//    function[0].exponent = 2;
-//    //Second item:
-//    function[1].constant = 2;
-//    function[1].exponent = 1;
-//
-//    float xMin = -2;
-//    float xMax = 2;
-//    float yMin = -1;
-//    float yMax = 4;
-//
-//    int numPoints = 10;
-//
-//    ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(function, numPolynomialComponents, xMax, yMin, yMax,
-//                                                                xMin, numPoints);
-////Print everything out human readable:
-//    for(int i = 0; i < numPoints; i++) {
-//        std::cout << "Point " << i+1 << ": (" << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << ")" << std::endl;
-//    }
-//
-////Print everything out machine readable:
-//    for(int i = 0; i < numPoints; i++) {
-//        std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
-//    }
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////drawPolynomial testing:
-
     if (argc < 5) {
         std::cout << "Usage: <\"ax^b+cx^d+...\">, <xMin>, <xMax>, <yMin>, <yMax>," << std::endl;
         return 0;
@@ -1040,11 +959,6 @@ int main(const int argc, const char *const argv[]) {
         std::cout << "Polynomial Exponoent " << function.components[i].exponent << std::endl;
     }
 
-//    float xMin = -2;
-//    float xMax = 2;
-//    float yMin = -1;
-//    float yMax = 4;
-
     float xMin = atoi(argv[2]);
     float xMax = atoi(argv[3]);
     float yMin = atoi(argv[4]);
@@ -1054,22 +968,18 @@ int main(const int argc, const char *const argv[]) {
 
     ArrayOfPoints arrayOfPoints = createArrayOfPolynomialPoints(function, function.numComponents, xMax, yMin, yMax,
                                                                 xMin, numPoints);
-//Print everything out human readable:
+    //Print everything out human readable:
     for (int i = 0; i < numPoints; i++) {
         std::cout << "Point " << i + 1 << ": (" << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << ")"
                   << std::endl;
     }
 
-//Print everything out machine readable:
+    //Print everything out machine readable:
     for (int i = 0; i < numPoints; i++) {
         std::cout << arrayOfPoints.points[i].x << ", " << arrayOfPoints.points[i].y << std::endl;
     }
 
     StatisticalData statisticalData = drawPolynomial(arrayOfPoints);
-
-//    std::cout << "\nStatisticalData: " << std::endl;
-//    std::cout << "Length of function: " << (statisticalData.lengthOfFunction * 0.2278) / 10.0 << "cm" << std::endl;
-//    std::cout << "Length of time to draw function: " << statisticalData.lengthOfTime << "s" << std::endl;
 
     logFile << "X-Y Plotter Log File:\n";
     logFile << "Statistical Data: \n";
@@ -1085,106 +995,6 @@ int main(const int argc, const char *const argv[]) {
     }
     logFile << "\n";
     logFile << "\n";
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////logFile Testing:
-//    logFile << "Writing this to a file.\n";
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////Servo (Pen) Motor testing:
-//    liftPen();
-//    lowerPen();
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////StepMotor testing:
-//    Direction direction;
-//    AXIS axis;
-//
-//    int numSteps = 0;
-//
-//    if (!(strcmp(argv[1], "X"))) {
-//        axis = X;
-//    } else if (!(strcmp(argv[1], "Y"))) {
-//        axis = Y;
-//    } else {
-//        axis = Y;
-//    }
-//
-//    if (!(strcmp(argv[2], "CCW"))) {
-//        direction = CCW;
-//    } else if (!(strcmp(argv[2], "CW"))) {
-//        direction = CW;
-//    } else {
-//        direction = CCW;
-//    }
-//
-//
-//    // Set the gpio from positive to negative 20 times
-//    printf("> begin stepping the motor!\n");
-//    for (int i = 0; i < 10000; i++) {
-//        if (stepMotor(axis, direction)) {
-//            numSteps++;
-//        } else {
-//            std::cout << "numSteps: " << numSteps << std::endl;
-//        }
-//
-//    }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////Determine total size of grid testing:
-//    gotoZero();
-//    Direction direction;
-//    AXIS axis;
-//
-//    int numSteps = 0;
-//
-//    if (!(strcmp(argv[1], "X"))) {
-//        axis = X;
-//    } else if (!(strcmp(argv[1], "Y"))) {
-//        axis = Y;
-//    } else {
-//        axis = Y;
-//    }
-//
-//    if (!(strcmp(argv[2], "CCW"))) {
-//        direction = CCW;
-//    } else if (!(strcmp(argv[2], "CW"))) {
-//        direction = CW;
-//    } else {
-//        direction = CCW;
-//    }
-//
-//
-//    // Set the gpio from positive to negative 20 times
-//    printf("> begin stepping the motor!\n");
-//    for (int i = 0; i < 10000; i++) {
-//        if (stepMotor(axis, direction)) {
-//            numSteps++;
-//        } else {
-//            std::cout << "numSteps: " << numSteps << std::endl;
-//            return 0;
-//        }
-//
-//    }
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////GotoZero testing:
-//    gotoZero();
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////Goto testing:
-//    int x = atoi(argv[1]);
-//    int y = atoi(argv[2]);
-//    gotoPoint(x, y);
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////More goto testing:
-//    gotoPoint(x - 50, y - 40);
-//    gotoPoint(x + 60, y - 40);
-//    gotoZero();
 
     closeLogFile();
 
@@ -1206,6 +1016,5 @@ int main(const int argc, const char *const argv[]) {
 
 //DONE: Limit switches
 //DONE: configure input gpios, for limit switches
-//TODO: figure out how you're gonna interface with servo motors.
 //DONE: motors go backwards to how they're supposed to.
 //Make array of points that represent the polynomial.
